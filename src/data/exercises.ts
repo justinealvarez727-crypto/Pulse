@@ -1,10 +1,257 @@
 import type { Equipment, Exercise, ExerciseType } from '@/types';
 
-/** * Curated exercise library (~250). Authoring format: "Name|Equip|Primary|Others,comma|Type". * Variants (Incline/Decline, Close-grip…) are expanded programmatically at the bottom. * Exercise "pictures" are replaced by icons (spec) — see components/Icons.tsx#exerciseIcon. */
+/**
+ * Curated exercise library (~250). Authoring format: "Name|Equip|Primary|Others,comma|Type".
+ * Variants (Incline/Decline, Close-grip…) are expanded programmatically at the bottom.
+ * Exercise "pictures" are replaced by icons (spec) — see components/Icons.tsx#exerciseIcon.
+ */
 const EQ: Record<string, Equipment> = { BW: 'Bodyweight', BB: 'Barbell', DB: 'Dumbbell', KB: 'Kettlebell', CB: 'Cable', MC: 'Machine', SM: 'Smith Machine', EZ: 'EZ Bar', PU: 'Pull-up Bar', RB: 'Resistance Band' };
 const TY: Record<string, ExerciseType> = { wr: 'weight_reps', br: 'bodyweight_reps', wb: 'weighted_bodyweight', ab: 'assisted_bodyweight', du: 'duration', dw: 'duration_weight', dd: 'distance_duration', wd: 'weight_distance' };
 
-const RAW = ` Barbell Bench Press|BB|Pectoralis Major|Triceps,Front Delts|wr Dumbbell Bench Press|DB|Pectoralis Major|Triceps,Front Delts|wr Smith Machine Bench Press|SM|Pectoralis Major|Triceps,Front Delts|wr Machine Chest Press|MC|Pectoralis Major|Triceps,Front Delts|wr Push-Up|BW|Pectoralis Major|Triceps,Front Delts,Abs|br Weighted Push-Up|BW|Pectoralis Major|Triceps,Front Delts|wb Chest Dips|BW|Pectoralis Major|Triceps,Front Delts|br Weighted Chest Dips|BW|Pectoralis Major|Triceps,Front Delts|wb Assisted Chest Dips|MC|Pectoralis Major|Triceps,Front Delts|ab Dumbbell Fly|DB|Pectoralis Major|Front Delts|wr Cable Fly|CB|Pectoralis Major|Front Delts|wr Cable Crossover|CB|Pectoralis Major|Front Delts|wr Pec Deck Fly|MC|Pectoralis Major|Front Delts|wr Dumbbell Pullover|DB|Pectoralis Major|Latissimus Dorsi,Triceps|wr Resistance Band Chest Press|RB|Pectoralis Major|Triceps|wr Svend Press|DB|Pectoralis Major|Front Delts|wr Serratus Push-Up Plus|BW|Serratus Anterior|Pectoralis Major|br Cable Serratus Crunch|CB|Serratus Anterior|Abs|wr Pull-Up|PU|Latissimus Dorsi|Biceps,Rhomboids|br Chin-Up|PU|Latissimus Dorsi|Biceps,Brachialis|br Weighted Pull-Up|PU|Latissimus Dorsi|Biceps,Rhomboids|wb Assisted Pull-Up|MC|Latissimus Dorsi|Biceps,Rhomboids|ab Neutral-Grip Pull-Up|PU|Latissimus Dorsi|Biceps,Brachialis|br Lat Pulldown|CB|Latissimus Dorsi|Biceps,Rhomboids|wr Close-Grip Lat Pulldown|CB|Latissimus Dorsi|Biceps,Brachialis|wr Neutral-Grip Lat Pulldown|CB|Latissimus Dorsi|Biceps,Brachialis,Rhomboids|wr Straight-Arm Pulldown|CB|Latissimus Dorsi|Triceps|wr Seated Cable Row|CB|Latissimus Dorsi|Rhomboids,Biceps,Rear Delts|wr Bent-Over Barbell Row|BB|Latissimus Dorsi|Rhomboids,Trapezius,Biceps,Erector Spinae|wr Pendlay Row|BB|Latissimus Dorsi|Rhomboids,Trapezius,Erector Spinae|wr One-Arm Dumbbell Row|DB|Latissimus Dorsi|Rhomboids,Biceps|wr Chest-Supported Row|MC|Rhomboids|Latissimus Dorsi,Rear Delts,Biceps|wr T-Bar Row|BB|Latissimus Dorsi|Rhomboids,Trapezius,Biceps|wr Machine Row|MC|Latissimus Dorsi|Rhomboids,Biceps|wr Inverted Row|BW|Latissimus Dorsi|Rhomboids,Biceps|br Kettlebell Row|KB|Latissimus Dorsi|Rhomboids,Biceps|wr Barbell Deadlift|BB|Erector Spinae|Glutes,Hamstrings,Trapezius,Forearm Flexors|wr Sumo Deadlift|BB|Glutes|Adductors,Hamstrings,Erector Spinae,Quadriceps|wr Trap Bar Deadlift|BB|Quadriceps|Glutes,Hamstrings,Trapezius,Erector Spinae|wr Rack Pull|BB|Erector Spinae|Trapezius,Glutes,Hamstrings|wr Back Extension|BW|Erector Spinae|Glutes,Hamstrings|br Weighted Back Extension|MC|Erector Spinae|Glutes,Hamstrings|wr Good Morning|BB|Erector Spinae|Hamstrings,Glutes|wr Barbell Shrug|BB|Trapezius|Forearm Flexors|wr Dumbbell Shrug|DB|Trapezius|Forearm Flexors|wr Face Pull|CB|Rear Delts|Trapezius,Rhomboids|wr Reverse Pec Deck|MC|Rear Delts|Rhomboids,Trapezius|wr Superman|BW|Erector Spinae|Glutes|du Barbell Overhead Press|BB|Front Delts|Side Delts,Triceps,Trapezius|wr Dumbbell Shoulder Press|DB|Front Delts|Side Delts,Triceps|wr Dumbbell Overhead Press|DB|Front Delts|Side Delts,Triceps,Trapezius|wr Seated Dumbbell Press|DB|Front Delts|Side Delts,Triceps|wr Arnold Press|DB|Front Delts|Side Delts,Triceps|wr Machine Shoulder Press|MC|Front Delts|Side Delts,Triceps|wr Smith Machine Shoulder Press|SM|Front Delts|Side Delts,Triceps|wr Push Press|BB|Front Delts|Triceps,Quadriceps|wr Dumbbell Lateral Raise|DB|Side Delts|Trapezius|wr Cable Lateral Raise|CB|Side Delts|Trapezius|wr Machine Lateral Raise|MC|Side Delts||wr Dumbbell Front Raise|DB|Front Delts|Side Delts|wr Plate Front Raise|BB|Front Delts|Side Delts|wr Rear Delt Fly|DB|Rear Delts|Rhomboids,Trapezius|wr Cable Rear Delt Fly|CB|Rear Delts|Rhomboids|wr Upright Row|EZ|Side Delts|Trapezius,Biceps|wr Pike Push-Up|BW|Front Delts|Triceps,Side Delts|br Handstand Hold|BW|Front Delts|Triceps,Abs|du Band Pull-Apart|RB|Rear Delts|Rhomboids,Trapezius|br Dumbbell Bicep Curl|DB|Biceps|Brachialis,Forearm Flexors|wr Barbell Curl|BB|Biceps|Brachialis,Forearm Flexors|wr EZ-Bar Curl|EZ|Biceps|Brachialis,Forearm Flexors|wr Hammer Curl|DB|Brachialis|Biceps,Brachioradialis|wr Incline Dumbbell Curl|DB|Biceps|Brachialis|wr Preacher Curl|EZ|Biceps|Brachialis|wr Concentration Curl|DB|Biceps|Brachialis|wr Cable Curl|CB|Biceps|Brachialis|wr Spider Curl|DB|Biceps|Brachialis|wr Machine Preacher Curl|MC|Biceps|Brachialis|wr Resistance Band Curl|RB|Biceps|Brachialis|wr Reverse Curl|EZ|Brachioradialis|Brachialis,Forearm Extensors|wr Triceps Pushdown|CB|Triceps||wr Rope Pushdown|CB|Triceps||wr Overhead Triceps Extension|DB|Triceps||wr Cable Overhead Triceps Extension|CB|Triceps||wr Skull Crusher|EZ|Triceps||wr Close-Grip Bench Press|BB|Triceps|Pectoralis Major,Front Delts|wr Bench Dips|BW|Triceps|Front Delts,Pectoralis Major|br Triceps Dips|BW|Triceps|Pectoralis Major,Front Delts|br Diamond Push-Up|BW|Triceps|Pectoralis Major|br Triceps Kickback|DB|Triceps||wr Machine Triceps Extension|MC|Triceps||wr Wrist Curl|BB|Forearm Flexors||wr Reverse Wrist Curl|BB|Forearm Extensors||wr Farmer's Walk|DB|Forearm Flexors|Trapezius,Abs|wd Dead Hang|PU|Forearm Flexors|Latissimus Dorsi|du Plate Pinch|BB|Forearm Flexors||du Barbell Back Squat|BB|Quadriceps|Glutes,Hamstrings,Erector Spinae,Adductors|wr Barbell Front Squat|BB|Quadriceps|Glutes,Abs,Erector Spinae|wr Smith Machine Squat|SM|Quadriceps|Glutes,Adductors|wr Goblet Squat|DB|Quadriceps|Glutes,Adductors|wr Kettlebell Goblet Squat|KB|Quadriceps|Glutes,Adductors|wr Bodyweight Squat|BW|Quadriceps|Glutes|br Hack Squat|MC|Quadriceps|Glutes|wr Leg Press|MC|Quadriceps|Glutes,Hamstrings|wr Leg Extension|MC|Quadriceps||wr Bulgarian Split Squat|DB|Quadriceps|Glutes,Adductors|wr Walking Lunge|DB|Quadriceps|Glutes,Hamstrings|wr Reverse Lunge|DB|Quadriceps|Glutes,Hamstrings|wr Barbell Lunge|BB|Quadriceps|Glutes,Hamstrings|wr Step-Up|DB|Quadriceps|Glutes|wr Sissy Squat|BW|Quadriceps||br Wall Sit|BW|Quadriceps|Glutes|du Pistol Squat|BW|Quadriceps|Glutes|br Jump Squat|BW|Quadriceps|Glutes,Calves|br Romanian Deadlift|BB|Hamstrings|Glutes,Erector Spinae|wr Dumbbell Romanian Deadlift|DB|Hamstrings|Glutes,Erector Spinae|wr Stiff-Leg Deadlift|BB|Hamstrings|Glutes,Erector Spinae|wr Lying Leg Curl|MC|Hamstrings||wr Seated Leg Curl|MC|Hamstrings||wr Standing Leg Curl|MC|Hamstrings||wr Nordic Hamstring Curl|BW|Hamstrings|Glutes|br Cable Pull-Through|CB|Glutes|Hamstrings|wr Kettlebell Swing|KB|Glutes|Hamstrings,Erector Spinae|wr Barbell Hip Thrust|BB|Glutes|Hamstrings|wr Smith Machine Hip Thrust|SM|Glutes|Hamstrings|wr Machine Hip Thrust|MC|Glutes|Hamstrings|wr Glute Bridge|BW|Glutes|Hamstrings|br Single-Leg Glute Bridge|BW|Glutes|Hamstrings|br Cable Kickback|CB|Glutes|Hamstrings|wr Glute Kickback Machine|MC|Glutes||wr Banded Lateral Walk|RB|Glute Medius|Abductors|br Fire Hydrant|BW|Glute Medius|Glutes|br Hip Abduction Machine|MC|Abductors|Glute Medius|wr Hip Adduction Machine|MC|Adductors||wr Copenhagen Plank|BW|Adductors|Obliques|du Cossack Squat|BW|Adductors|Quadriceps,Glutes|br Standing Calf Raise|MC|Calves|Soleus|wr Seated Calf Raise|MC|Soleus|Calves|wr Smith Machine Calf Raise|SM|Calves|Soleus|wr Donkey Calf Raise|MC|Calves|Soleus|wr Leg Press Calf Raise|MC|Calves|Soleus|wr Single-Leg Calf Raise|BW|Calves|Soleus|br Dumbbell Calf Raise|DB|Calves|Soleus|wr Tibialis Raise|BW|Calves||br Plank|BW|Abs|Transverse Abs,Obliques|du Side Plank|BW|Obliques|Transverse Abs,Glute Medius|du Crunch|BW|Abs||br Cable Crunch|CB|Abs||wr Machine Crunch|MC|Abs||wr Sit-Up|BW|Abs|Hip Flexors|br Decline Sit-Up|BW|Abs|Hip Flexors|br Hanging Leg Raise|PU|Abs|Hip Flexors|br Hanging Knee Raise|PU|Abs|Hip Flexors|br Lying Leg Raise|BW|Abs|Hip Flexors|br Reverse Crunch|BW|Abs|Hip Flexors|br Bicycle Crunch|BW|Obliques|Abs|br Russian Twist|BW|Obliques|Abs|br Weighted Russian Twist|DB|Obliques|Abs|wr Woodchopper|CB|Obliques|Abs,Transverse Abs|wr Pallof Press|CB|Transverse Abs|Obliques|wr Ab Wheel Rollout|BW|Abs|Transverse Abs,Hip Flexors|br Dead Bug|BW|Transverse Abs|Abs,Hip Flexors|br Bird Dog|BW|Transverse Abs|Erector Spinae,Glutes|br Hollow Body Hold|BW|Abs|Transverse Abs|du Mountain Climber|BW|Abs|Hip Flexors,Front Delts|du V-Up|BW|Abs|Hip Flexors|br Toes-to-Bar|PU|Abs|Hip Flexors,Latissimus Dorsi|br Suitcase Carry|DB|Obliques|Forearm Flexors,Transverse Abs|wd Hip Flexor March|BW|Hip Flexors|Abs|br Seated Hip Flexor Raise|MC|Hip Flexors|Abs|wr Kettlebell Turkish Get-Up|KB|Transverse Abs|Front Delts,Glutes,Obliques|wr Kettlebell Clean|KB|Glutes|Trapezius,Hamstrings,Front Delts|wr Kettlebell Snatch|KB|Glutes|Front Delts,Trapezius,Hamstrings|wr Kettlebell Press|KB|Front Delts|Triceps,Side Delts|wr Burpee|BW|Quadriceps|Pectoralis Major,Front Delts,Abs|br Box Jump|BW|Quadriceps|Glutes,Calves|br Jump Rope|BW|Calves|Soleus,Forearm Flexors|du Treadmill Run|MC|Quadriceps|Calves,Hamstrings,Glutes|dd Outdoor Run|BW|Quadriceps|Calves,Hamstrings,Glutes|dd Treadmill Walk|MC|Quadriceps|Calves,Glutes|dd Brisk Walk|BW|Quadriceps|Calves,Glutes|dd Cycling|BW|Quadriceps|Calves,Hamstrings,Glutes|dd Stationary Bike|MC|Quadriceps|Calves,Hamstrings|dd Rowing Machine|MC|Latissimus Dorsi|Quadriceps,Biceps,Erector Spinae|dd Elliptical|MC|Quadriceps|Glutes,Calves|dd Stair Climber|MC|Glutes|Quadriceps,Calves|dd Swimming|BW|Latissimus Dorsi|Front Delts,Triceps,Quadriceps|dd Sled Push|MC|Quadriceps|Glutes,Calves|wd Sled Pull|MC|Hamstrings|Glutes,Erector Spinae|wd Battle Ropes|BW|Front Delts|Abs,Forearm Flexors|du Bear Crawl|BW|Front Delts|Abs,Quadriceps|dd Cat-Cow Stretch|BW|Erector Spinae|Abs|du World's Greatest Stretch|BW|Hip Flexors|Glutes,Hamstrings,Erector Spinae|du Hip Flexor Stretch|BW|Hip Flexors|Quadriceps|du Hamstring Stretch|BW|Hamstrings||du Quad Stretch|BW|Quadriceps||du Child's Pose|BW|Latissimus Dorsi|Erector Spinae|du Doorway Chest Stretch|BW|Pectoralis Major|Front Delts|du Cross-Body Shoulder Stretch|BW|Rear Delts|Rhomboids|du Pigeon Pose|BW|Glutes|Hip Flexors|du Calf Stretch|BW|Calves|Soleus|du Foam Roll Back|BW|Erector Spinae||du Arm Circles|BW|Side Delts|Front Delts,Rear Delts|du Leg Swings|BW|Hip Flexors|Hamstrings,Glute Medius|br Band Shoulder Dislocates|RB|Rear Delts|Side Delts,Rhomboids|br Jumping Jacks|BW|Calves|Side Delts,Quadriceps|du High Knees|BW|Hip Flexors|Quadriceps,Calves|du Inchworm|BW|Hamstrings|Abs,Front Delts|br Glute Activation Squat Hold|BW|Glutes|Quadriceps|du Neck Rolls|BW|Trapezius||du Shoulder Rolls|BW|Trapezius|Side Delts|br Wrist Circles|BW|Forearm Flexors|Forearm Extensors|br Ankle Circles|BW|Calves|Soleus|br Hip Circles|BW|Hip Flexors|Glutes|br Torso Twists|BW|Obliques|Abs|br Thoracic Rotation|BW|Erector Spinae|Obliques|br Scapular Push-Up|BW|Serratus Anterior|Rhomboids|br Wall Slides|BW|Serratus Anterior|Rear Delts,Trapezius|br Walking Knee Hugs|BW|Glutes|Hamstrings|br Walking Lunge with Twist|BW|Quadriceps|Glutes,Obliques|br Butt Kicks|BW|Hamstrings|Quadriceps|du Skipping|BW|Calves|Quadriceps|du Light Jog in Place|BW|Quadriceps|Calves|du Lateral Shuffle|BW|Glute Medius|Adductors,Quadriceps|du Frankenstein Walk|BW|Hamstrings|Hip Flexors|br Deep Squat Hold|BW|Adductors|Quadriceps,Glutes|du 90/90 Hip Switch|BW|Glutes|Hip Flexors,Adductors|br Banded Good Morning|RB|Hamstrings|Glutes,Erector Spinae|br Banded Glute Bridge|RB|Glutes|Hamstrings|br Banded Squat|RB|Quadriceps|Glutes|br Banded Face Pull|RB|Rear Delts|Rhomboids|br Light Rowing|MC|Latissimus Dorsi|Quadriceps,Biceps|dd Zone 2 Run|BW|Quadriceps|Calves,Hamstrings,Glutes|dd Zone 2 Treadmill Incline Walk|MC|Glutes|Quadriceps,Calves|dd Zone 2 Brisk Walk|BW|Quadriceps|Calves,Glutes|dd Zone 2 Hike|BW|Quadriceps|Glutes,Calves,Hamstrings|dd Zone 2 Cycling|BW|Quadriceps|Calves,Hamstrings,Glutes|dd Zone 2 Stationary Bike|MC|Quadriceps|Calves,Hamstrings|dd Zone 2 Air Bike|MC|Quadriceps|Latissimus Dorsi,Front Delts|dd Zone 2 Rowing|MC|Latissimus Dorsi|Quadriceps,Biceps,Erector Spinae|dd Zone 2 Elliptical|MC|Quadriceps|Glutes,Calves|dd Zone 2 Stair Climber|MC|Glutes|Quadriceps,Calves|dd Zone 2 Swim|BW|Latissimus Dorsi|Front Delts,Triceps,Quadriceps|dd `;
+const RAW = `
+Barbell Bench Press|BB|Pectoralis Major|Triceps,Front Delts|wr
+Dumbbell Bench Press|DB|Pectoralis Major|Triceps,Front Delts|wr
+Smith Machine Bench Press|SM|Pectoralis Major|Triceps,Front Delts|wr
+Machine Chest Press|MC|Pectoralis Major|Triceps,Front Delts|wr
+Push-Up|BW|Pectoralis Major|Triceps,Front Delts,Abs|br
+Weighted Push-Up|BW|Pectoralis Major|Triceps,Front Delts|wb
+Chest Dips|BW|Pectoralis Major|Triceps,Front Delts|br
+Weighted Chest Dips|BW|Pectoralis Major|Triceps,Front Delts|wb
+Assisted Chest Dips|MC|Pectoralis Major|Triceps,Front Delts|ab
+Dumbbell Fly|DB|Pectoralis Major|Front Delts|wr
+Cable Fly|CB|Pectoralis Major|Front Delts|wr
+Cable Crossover|CB|Pectoralis Major|Front Delts|wr
+Pec Deck Fly|MC|Pectoralis Major|Front Delts|wr
+Dumbbell Pullover|DB|Pectoralis Major|Latissimus Dorsi,Triceps|wr
+Resistance Band Chest Press|RB|Pectoralis Major|Triceps|wr
+Svend Press|DB|Pectoralis Major|Front Delts|wr
+Serratus Push-Up Plus|BW|Serratus Anterior|Pectoralis Major|br
+Cable Serratus Crunch|CB|Serratus Anterior|Abs|wr
+Pull-Up|PU|Latissimus Dorsi|Biceps,Rhomboids|br
+Chin-Up|PU|Latissimus Dorsi|Biceps,Brachialis|br
+Weighted Pull-Up|PU|Latissimus Dorsi|Biceps,Rhomboids|wb
+Assisted Pull-Up|MC|Latissimus Dorsi|Biceps,Rhomboids|ab
+Neutral-Grip Pull-Up|PU|Latissimus Dorsi|Biceps,Brachialis|br
+Lat Pulldown|CB|Latissimus Dorsi|Biceps,Rhomboids|wr
+Close-Grip Lat Pulldown|CB|Latissimus Dorsi|Biceps,Brachialis|wr
+Neutral-Grip Lat Pulldown|CB|Latissimus Dorsi|Biceps,Brachialis,Rhomboids|wr
+Straight-Arm Pulldown|CB|Latissimus Dorsi|Triceps|wr
+Seated Cable Row|CB|Latissimus Dorsi|Rhomboids,Biceps,Rear Delts|wr
+Bent-Over Barbell Row|BB|Latissimus Dorsi|Rhomboids,Trapezius,Biceps,Erector Spinae|wr
+Pendlay Row|BB|Latissimus Dorsi|Rhomboids,Trapezius,Erector Spinae|wr
+One-Arm Dumbbell Row|DB|Latissimus Dorsi|Rhomboids,Biceps|wr
+Chest-Supported Row|MC|Rhomboids|Latissimus Dorsi,Rear Delts,Biceps|wr
+T-Bar Row|BB|Latissimus Dorsi|Rhomboids,Trapezius,Biceps|wr
+Machine Row|MC|Latissimus Dorsi|Rhomboids,Biceps|wr
+Inverted Row|BW|Latissimus Dorsi|Rhomboids,Biceps|br
+Kettlebell Row|KB|Latissimus Dorsi|Rhomboids,Biceps|wr
+Barbell Deadlift|BB|Erector Spinae|Glutes,Hamstrings,Trapezius,Forearm Flexors|wr
+Sumo Deadlift|BB|Glutes|Adductors,Hamstrings,Erector Spinae,Quadriceps|wr
+Trap Bar Deadlift|BB|Quadriceps|Glutes,Hamstrings,Trapezius,Erector Spinae|wr
+Rack Pull|BB|Erector Spinae|Trapezius,Glutes,Hamstrings|wr
+Back Extension|BW|Erector Spinae|Glutes,Hamstrings|br
+Weighted Back Extension|MC|Erector Spinae|Glutes,Hamstrings|wr
+Good Morning|BB|Erector Spinae|Hamstrings,Glutes|wr
+Barbell Shrug|BB|Trapezius|Forearm Flexors|wr
+Dumbbell Shrug|DB|Trapezius|Forearm Flexors|wr
+Face Pull|CB|Rear Delts|Trapezius,Rhomboids|wr
+Reverse Pec Deck|MC|Rear Delts|Rhomboids,Trapezius|wr
+Superman|BW|Erector Spinae|Glutes|du
+Barbell Overhead Press|BB|Front Delts|Side Delts,Triceps,Trapezius|wr
+Dumbbell Shoulder Press|DB|Front Delts|Side Delts,Triceps|wr
+Dumbbell Overhead Press|DB|Front Delts|Side Delts,Triceps,Trapezius|wr
+Seated Dumbbell Press|DB|Front Delts|Side Delts,Triceps|wr
+Arnold Press|DB|Front Delts|Side Delts,Triceps|wr
+Machine Shoulder Press|MC|Front Delts|Side Delts,Triceps|wr
+Smith Machine Shoulder Press|SM|Front Delts|Side Delts,Triceps|wr
+Push Press|BB|Front Delts|Triceps,Quadriceps|wr
+Dumbbell Lateral Raise|DB|Side Delts|Trapezius|wr
+Cable Lateral Raise|CB|Side Delts|Trapezius|wr
+Machine Lateral Raise|MC|Side Delts||wr
+Dumbbell Front Raise|DB|Front Delts|Side Delts|wr
+Plate Front Raise|BB|Front Delts|Side Delts|wr
+Rear Delt Fly|DB|Rear Delts|Rhomboids,Trapezius|wr
+Cable Rear Delt Fly|CB|Rear Delts|Rhomboids|wr
+Upright Row|EZ|Side Delts|Trapezius,Biceps|wr
+Pike Push-Up|BW|Front Delts|Triceps,Side Delts|br
+Handstand Hold|BW|Front Delts|Triceps,Abs|du
+Band Pull-Apart|RB|Rear Delts|Rhomboids,Trapezius|br
+Dumbbell Bicep Curl|DB|Biceps|Brachialis,Forearm Flexors|wr
+Barbell Curl|BB|Biceps|Brachialis,Forearm Flexors|wr
+EZ-Bar Curl|EZ|Biceps|Brachialis,Forearm Flexors|wr
+Hammer Curl|DB|Brachialis|Biceps,Brachioradialis|wr
+Incline Dumbbell Curl|DB|Biceps|Brachialis|wr
+Preacher Curl|EZ|Biceps|Brachialis|wr
+Concentration Curl|DB|Biceps|Brachialis|wr
+Cable Curl|CB|Biceps|Brachialis|wr
+Spider Curl|DB|Biceps|Brachialis|wr
+Machine Preacher Curl|MC|Biceps|Brachialis|wr
+Resistance Band Curl|RB|Biceps|Brachialis|wr
+Reverse Curl|EZ|Brachioradialis|Brachialis,Forearm Extensors|wr
+Triceps Pushdown|CB|Triceps||wr
+Rope Pushdown|CB|Triceps||wr
+Overhead Triceps Extension|DB|Triceps||wr
+Cable Overhead Triceps Extension|CB|Triceps||wr
+Skull Crusher|EZ|Triceps||wr
+Close-Grip Bench Press|BB|Triceps|Pectoralis Major,Front Delts|wr
+Bench Dips|BW|Triceps|Front Delts,Pectoralis Major|br
+Triceps Dips|BW|Triceps|Pectoralis Major,Front Delts|br
+Diamond Push-Up|BW|Triceps|Pectoralis Major|br
+Triceps Kickback|DB|Triceps||wr
+Machine Triceps Extension|MC|Triceps||wr
+Wrist Curl|BB|Forearm Flexors||wr
+Reverse Wrist Curl|BB|Forearm Extensors||wr
+Farmer's Walk|DB|Forearm Flexors|Trapezius,Abs|wd
+Dead Hang|PU|Forearm Flexors|Latissimus Dorsi|du
+Plate Pinch|BB|Forearm Flexors||du
+Barbell Back Squat|BB|Quadriceps|Glutes,Hamstrings,Erector Spinae,Adductors|wr
+Barbell Front Squat|BB|Quadriceps|Glutes,Abs,Erector Spinae|wr
+Smith Machine Squat|SM|Quadriceps|Glutes,Adductors|wr
+Goblet Squat|DB|Quadriceps|Glutes,Adductors|wr
+Kettlebell Goblet Squat|KB|Quadriceps|Glutes,Adductors|wr
+Bodyweight Squat|BW|Quadriceps|Glutes|br
+Hack Squat|MC|Quadriceps|Glutes|wr
+Leg Press|MC|Quadriceps|Glutes,Hamstrings|wr
+Leg Extension|MC|Quadriceps||wr
+Bulgarian Split Squat|DB|Quadriceps|Glutes,Adductors|wr
+Walking Lunge|DB|Quadriceps|Glutes,Hamstrings|wr
+Reverse Lunge|DB|Quadriceps|Glutes,Hamstrings|wr
+Barbell Lunge|BB|Quadriceps|Glutes,Hamstrings|wr
+Step-Up|DB|Quadriceps|Glutes|wr
+Sissy Squat|BW|Quadriceps||br
+Wall Sit|BW|Quadriceps|Glutes|du
+Pistol Squat|BW|Quadriceps|Glutes|br
+Jump Squat|BW|Quadriceps|Glutes,Calves|br
+Romanian Deadlift|BB|Hamstrings|Glutes,Erector Spinae|wr
+Dumbbell Romanian Deadlift|DB|Hamstrings|Glutes,Erector Spinae|wr
+Stiff-Leg Deadlift|BB|Hamstrings|Glutes,Erector Spinae|wr
+Lying Leg Curl|MC|Hamstrings||wr
+Seated Leg Curl|MC|Hamstrings||wr
+Standing Leg Curl|MC|Hamstrings||wr
+Nordic Hamstring Curl|BW|Hamstrings|Glutes|br
+Cable Pull-Through|CB|Glutes|Hamstrings|wr
+Kettlebell Swing|KB|Glutes|Hamstrings,Erector Spinae|wr
+Barbell Hip Thrust|BB|Glutes|Hamstrings|wr
+Smith Machine Hip Thrust|SM|Glutes|Hamstrings|wr
+Machine Hip Thrust|MC|Glutes|Hamstrings|wr
+Glute Bridge|BW|Glutes|Hamstrings|br
+Single-Leg Glute Bridge|BW|Glutes|Hamstrings|br
+Cable Kickback|CB|Glutes|Hamstrings|wr
+Glute Kickback Machine|MC|Glutes||wr
+Banded Lateral Walk|RB|Glute Medius|Abductors|br
+Fire Hydrant|BW|Glute Medius|Glutes|br
+Hip Abduction Machine|MC|Abductors|Glute Medius|wr
+Hip Adduction Machine|MC|Adductors||wr
+Copenhagen Plank|BW|Adductors|Obliques|du
+Cossack Squat|BW|Adductors|Quadriceps,Glutes|br
+Standing Calf Raise|MC|Calves|Soleus|wr
+Seated Calf Raise|MC|Soleus|Calves|wr
+Smith Machine Calf Raise|SM|Calves|Soleus|wr
+Donkey Calf Raise|MC|Calves|Soleus|wr
+Leg Press Calf Raise|MC|Calves|Soleus|wr
+Single-Leg Calf Raise|BW|Calves|Soleus|br
+Dumbbell Calf Raise|DB|Calves|Soleus|wr
+Tibialis Raise|BW|Calves||br
+Plank|BW|Abs|Transverse Abs,Obliques|du
+Side Plank|BW|Obliques|Transverse Abs,Glute Medius|du
+Crunch|BW|Abs||br
+Cable Crunch|CB|Abs||wr
+Machine Crunch|MC|Abs||wr
+Sit-Up|BW|Abs|Hip Flexors|br
+Decline Sit-Up|BW|Abs|Hip Flexors|br
+Hanging Leg Raise|PU|Abs|Hip Flexors|br
+Hanging Knee Raise|PU|Abs|Hip Flexors|br
+Lying Leg Raise|BW|Abs|Hip Flexors|br
+Reverse Crunch|BW|Abs|Hip Flexors|br
+Bicycle Crunch|BW|Obliques|Abs|br
+Russian Twist|BW|Obliques|Abs|br
+Weighted Russian Twist|DB|Obliques|Abs|wr
+Woodchopper|CB|Obliques|Abs,Transverse Abs|wr
+Pallof Press|CB|Transverse Abs|Obliques|wr
+Ab Wheel Rollout|BW|Abs|Transverse Abs,Hip Flexors|br
+Dead Bug|BW|Transverse Abs|Abs,Hip Flexors|br
+Bird Dog|BW|Transverse Abs|Erector Spinae,Glutes|br
+Hollow Body Hold|BW|Abs|Transverse Abs|du
+Mountain Climber|BW|Abs|Hip Flexors,Front Delts|du
+V-Up|BW|Abs|Hip Flexors|br
+Toes-to-Bar|PU|Abs|Hip Flexors,Latissimus Dorsi|br
+Suitcase Carry|DB|Obliques|Forearm Flexors,Transverse Abs|wd
+Hip Flexor March|BW|Hip Flexors|Abs|br
+Seated Hip Flexor Raise|MC|Hip Flexors|Abs|wr
+Kettlebell Turkish Get-Up|KB|Transverse Abs|Front Delts,Glutes,Obliques|wr
+Kettlebell Clean|KB|Glutes|Trapezius,Hamstrings,Front Delts|wr
+Kettlebell Snatch|KB|Glutes|Front Delts,Trapezius,Hamstrings|wr
+Kettlebell Press|KB|Front Delts|Triceps,Side Delts|wr
+Burpee|BW|Quadriceps|Pectoralis Major,Front Delts,Abs|br
+Box Jump|BW|Quadriceps|Glutes,Calves|br
+Jump Rope|BW|Calves|Soleus,Forearm Flexors|du
+Treadmill Run|MC|Quadriceps|Calves,Hamstrings,Glutes|dd
+Outdoor Run|BW|Quadriceps|Calves,Hamstrings,Glutes|dd
+Treadmill Walk|MC|Quadriceps|Calves,Glutes|dd
+Brisk Walk|BW|Quadriceps|Calves,Glutes|dd
+Cycling|BW|Quadriceps|Calves,Hamstrings,Glutes|dd
+Stationary Bike|MC|Quadriceps|Calves,Hamstrings|dd
+Rowing Machine|MC|Latissimus Dorsi|Quadriceps,Biceps,Erector Spinae|dd
+Elliptical|MC|Quadriceps|Glutes,Calves|dd
+Stair Climber|MC|Glutes|Quadriceps,Calves|dd
+Swimming|BW|Latissimus Dorsi|Front Delts,Triceps,Quadriceps|dd
+Sled Push|MC|Quadriceps|Glutes,Calves|wd
+Sled Pull|MC|Hamstrings|Glutes,Erector Spinae|wd
+Battle Ropes|BW|Front Delts|Abs,Forearm Flexors|du
+Bear Crawl|BW|Front Delts|Abs,Quadriceps|dd
+Cat-Cow Stretch|BW|Erector Spinae|Abs|du
+World's Greatest Stretch|BW|Hip Flexors|Glutes,Hamstrings,Erector Spinae|du
+Hip Flexor Stretch|BW|Hip Flexors|Quadriceps|du
+Hamstring Stretch|BW|Hamstrings||du
+Quad Stretch|BW|Quadriceps||du
+Child's Pose|BW|Latissimus Dorsi|Erector Spinae|du
+Doorway Chest Stretch|BW|Pectoralis Major|Front Delts|du
+Cross-Body Shoulder Stretch|BW|Rear Delts|Rhomboids|du
+Pigeon Pose|BW|Glutes|Hip Flexors|du
+Calf Stretch|BW|Calves|Soleus|du
+Foam Roll Back|BW|Erector Spinae||du
+Arm Circles|BW|Side Delts|Front Delts,Rear Delts|du
+Leg Swings|BW|Hip Flexors|Hamstrings,Glute Medius|br
+Band Shoulder Dislocates|RB|Rear Delts|Side Delts,Rhomboids|br
+Jumping Jacks|BW|Calves|Side Delts,Quadriceps|du
+High Knees|BW|Hip Flexors|Quadriceps,Calves|du
+Inchworm|BW|Hamstrings|Abs,Front Delts|br
+Glute Activation Squat Hold|BW|Glutes|Quadriceps|du
+Neck Rolls|BW|Trapezius||du
+Shoulder Rolls|BW|Trapezius|Side Delts|br
+Wrist Circles|BW|Forearm Flexors|Forearm Extensors|br
+Ankle Circles|BW|Calves|Soleus|br
+Hip Circles|BW|Hip Flexors|Glutes|br
+Torso Twists|BW|Obliques|Abs|br
+Thoracic Rotation|BW|Erector Spinae|Obliques|br
+Scapular Push-Up|BW|Serratus Anterior|Rhomboids|br
+Wall Slides|BW|Serratus Anterior|Rear Delts,Trapezius|br
+Walking Knee Hugs|BW|Glutes|Hamstrings|br
+Walking Lunge with Twist|BW|Quadriceps|Glutes,Obliques|br
+Butt Kicks|BW|Hamstrings|Quadriceps|du
+Skipping|BW|Calves|Quadriceps|du
+Light Jog in Place|BW|Quadriceps|Calves|du
+Lateral Shuffle|BW|Glute Medius|Adductors,Quadriceps|du
+Frankenstein Walk|BW|Hamstrings|Hip Flexors|br
+Deep Squat Hold|BW|Adductors|Quadriceps,Glutes|du
+90/90 Hip Switch|BW|Glutes|Hip Flexors,Adductors|br
+Banded Good Morning|RB|Hamstrings|Glutes,Erector Spinae|br
+Banded Glute Bridge|RB|Glutes|Hamstrings|br
+Banded Squat|RB|Quadriceps|Glutes|br
+Banded Face Pull|RB|Rear Delts|Rhomboids|br
+Light Rowing|MC|Latissimus Dorsi|Quadriceps,Biceps|dd
+Zone 2 Run|BW|Quadriceps|Calves,Hamstrings,Glutes|dd
+Zone 2 Treadmill Incline Walk|MC|Glutes|Quadriceps,Calves|dd
+Zone 2 Brisk Walk|BW|Quadriceps|Calves,Glutes|dd
+Zone 2 Hike|BW|Quadriceps|Glutes,Calves,Hamstrings|dd
+Zone 2 Cycling|BW|Quadriceps|Calves,Hamstrings,Glutes|dd
+Zone 2 Stationary Bike|MC|Quadriceps|Calves,Hamstrings|dd
+Zone 2 Air Bike|MC|Quadriceps|Latissimus Dorsi,Front Delts|dd
+Zone 2 Rowing|MC|Latissimus Dorsi|Quadriceps,Biceps,Erector Spinae|dd
+Zone 2 Elliptical|MC|Quadriceps|Glutes,Calves|dd
+Zone 2 Stair Climber|MC|Glutes|Quadriceps,Calves|dd
+Zone 2 Swim|BW|Latissimus Dorsi|Front Delts,Triceps,Quadriceps|dd
+`;
 
 /** Dynamic-warm-up / mobility / activation drills — flagged so the picker can filter and suggest them. */
 const WARMUP_NAMES = new Set(['Arm Circles', 'Leg Swings', 'Jumping Jacks', 'High Knees', 'Inchworm', "World's Greatest Stretch", 'Cat-Cow Stretch', 'Band Shoulder Dislocates', 'Glute Activation Squat Hold', 'Bodyweight Squat', 'Band Pull-Apart', 'Mountain Climber', 'Jump Rope', 'Bird Dog', 'Dead Bug', 'Glute Bridge', 'Treadmill Walk', 'Neck Rolls', 'Shoulder Rolls', 'Wrist Circles', 'Ankle Circles', 'Hip Circles', 'Torso Twists', 'Thoracic Rotation', 'Scapular Push-Up', 'Wall Slides', 'Walking Knee Hugs', 'Walking Lunge with Twist', 'Butt Kicks', 'Skipping', 'Light Jog in Place', 'Lateral Shuffle', 'Frankenstein Walk', 'Deep Squat Hold', '90/90 Hip Switch', 'Banded Good Morning', 'Banded Glute Bridge', 'Banded Squat', 'Banded Face Pull', 'Light Rowing', 'Hip Flexor March', 'Banded Lateral Walk', 'Fire Hydrant']);
