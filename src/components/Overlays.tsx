@@ -22,7 +22,7 @@ const REG: Record<string, ComponentType<OP>> = {
   goals: L(() => import('@/overlays/Goals'), 'GoalsMenu'), goalSet: L(() => import('@/overlays/Goals'), 'GoalSet'), goalCustom: L(() => import('@/overlays/Goals'), 'CustomGoal'),
   zigzag: L(() => import('@/overlays/Goals'), 'Zigzag'), track: L(() => import('@/overlays/Goals'), 'Track'), resetTime: L(() => import('@/overlays/Goals'), 'ResetTime'), height: L(() => import('@/overlays/Goals'), 'Height'),
   editProfile: L(() => import('@/overlays/Goals'), 'EditProfile'), manage: L(() => import('@/overlays/Goals'), 'Manage'),
-  report: L(() => import('@/overlays/Report'), 'Report'), macroJournal: L(() => import('@/overlays/Report'), 'MacroJournal'), weight: L(() => import('@/overlays/Report'), 'WeightUpdate'),
+  report: L(() => import('@/overlays/Report'), 'Report'), macroJournal: L(() => import('@/overlays/Report'), 'MacroJournal'), weight: L(() => import('@/overlays/Report'), 'WeightUpdate'), weightReport: L(() => import('@/overlays/Report'), 'WeightReport'),
   review: L(() => import('@/overlays/Review'), 'FormReview'),
 };
 
@@ -48,4 +48,3 @@ export function Overlays() {
     </AnimatePresence>
   );
 }
-
