@@ -8,7 +8,7 @@ import { BUILTIN_EXERCISES, exerciseIndex } from '@/data/exercises';
 export const ROUTINE_COLORS = ['#16a34a', '#2563eb', '#f97316', '#a855f7', '#e11d48', '#0891b2', '#ca8a04', '#db2777', '#4f46e5', '#65a30d'];
 export const DEFAULT_REST = 150;
 export const newSet = (): SetTarget => ({ kg: 0, reps: 5, sec: 60, km: 0 });
-export const mkEx = (exerciseId: string, sets = 3): RoutineExercise => ({ uid: uid(), exerciseId, rest: DEFAULT_REST, target: exerciseIndex.get(exerciseId)?.type.startsWith('duration') ? 'time' : 'reps', sets: Array.from({ length: sets }, newSet) });
+export const mkEx = (exerciseId: string, sets = 3): RoutineExercise => ({ uid: uid(), exerciseId, rest: DEFAULT_REST, target: /^(duration|distance)/.test(exerciseIndex.get(exerciseId)?.type ?? '') ? 'time' : 'reps', sets: Array.from({ length: sets }, newSet) });
 
 /** Default Push / Pull / Legs — 3×5 @ 150s rest, every exercise tagged MAIN (spec). */
 export function defaultRoutines(): Routine[] {
@@ -19,7 +19,12 @@ export function defaultRoutines(): Routine[] {
     r('Legs', 'Lower · Quads, hamstrings, glutes, and calves.', 'Lower', ROUTINE_COLORS[2], ['barbell-back-squat', 'leg-press', 'lying-leg-curl', 'standing-calf-raise']),
   ];
 }
+/** One continuous cardio block: a single time-based set of `min` minutes. */
+const block = (id: string, min: number): RoutineExercise => ({ ...mkEx(id, 1), target: 'time', rest: 0, sets: [{ kg: 0, reps: 0, sec: min * 60, km: 0 }] });
 export const READY_MADE: Omit<Routine, 'id'>[] = [
+  { name: 'Zone 2 Run', desc: 'Easy conversational-pace run, 45 min.', category: 'Cardio', color: ROUTINE_COLORS[6], warmup: [mkEx('light-jog-in-place', 1), mkEx('leg-swings', 1)].map((e) => ({ ...e, target: 'time' as const, rest: 0, sets: [{ kg: 0, reps: 0, sec: 120, km: 0 }] })), main: [block('zone-2-run', 45)], cooldown: [] },
+  { name: 'Zone 2 Bike', desc: 'Steady easy ride, 60 min.', category: 'Cardio', color: ROUTINE_COLORS[7], warmup: [], main: [block('zone-2-cycling', 60)], cooldown: [] },
+  { name: 'Zone 2 Walk & Row', desc: 'Incline walk then rowing, 30 + 20 min.', category: 'Cardio', color: ROUTINE_COLORS[8], warmup: [], main: [block('zone-2-treadmill-incline-walk', 30), block('zone-2-rowing', 20)], cooldown: [] },
   { name: 'Upper Body', desc: 'Chest, back, shoulders and arms.', category: 'Upper', color: ROUTINE_COLORS[3], warmup: [], cooldown: [], main: ['dumbbell-bench-press', 'one-arm-dumbbell-row', 'dumbbell-shoulder-press', 'seated-cable-row', 'hammer-curl', 'triceps-pushdown'].map((i) => mkEx(i, 3)) },
   { name: 'Full Body A', desc: 'Squat, press, row — three days a week.', category: 'Full Body', color: ROUTINE_COLORS[4], warmup: [], cooldown: [], main: ['barbell-back-squat', 'barbell-bench-press', 'bent-over-barbell-row', 'plank'].map((i) => mkEx(i, 3)) },
   { name: 'Core & Glutes', desc: 'Hips, glutes and trunk stability.', category: 'Lower', color: ROUTINE_COLORS[5], warmup: [], cooldown: [], main: ['barbell-hip-thrust', 'bulgarian-split-squat', 'cable-crunch', 'side-plank'].map((i) => mkEx(i, 3)) },
