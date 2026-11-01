@@ -9,17 +9,19 @@ import type { Equipment, Exercise, ExerciseType } from '@/types';
 import type { OP } from '@/components/Overlays';
 
 /** Exercise picker: search + Equipment / Muscles / My Workouts, multi-select. Used by routines, warm-up, cool-down, planner. */
+/** Forgiving search: "1 arm", "one-arm" and "single arm" all match "One-Arm …"; hyphens/punctuation are ignored. */
+const norm = (t: string) => t.toLowerCase().replace(/[-_/]/g, ' ').replace(/\b(1|single|uni)\b/g, 'one').replace(/dumbbel+s?\b/g, 'dumbbell').replace(/\s+/g, ' ').trim();
 export function Picker({ p, close }: OP) {
   const { custom, allExercises } = useTraining(); const open = useUI((s) => s.open);
   const [tab, setTab] = useState<'equipment' | 'muscles' | 'mine'>('equipment'); const [q, setQ] = useState(''); const [eq, setEq] = useState<Equipment | null>(null);
   const [grp, setGrp] = useState<string | null>(null); const [mus, setMus] = useState<string | null>(null); const [sel, setSel] = useState<string[]>([]);
-  const title = (p.title as string) ?? 'Add Exercise'; const onDone = p.onDone as (ids: string[]) => void;
-  const list = useMemo(() => allExercises().filter((e) => (tab !== 'mine' || e.custom) && (!eq || e.equipment === eq) && (!mus ? !grp || [e.primary, ...e.others].some((m) => MUSCLE_GROUPS[grp].includes(m)) : [e.primary, ...e.others].includes(mus)) && e.name.toLowerCase().includes(q.toLowerCase())).sort((a, b) => a.name.localeCompare(b.name)), [allExercises, custom, tab, eq, grp, mus, q]);
-  const popular = !q && tab !== 'mine' ? list.filter((e) => POPULAR_NAMES.includes(e.name)).sort((a, b) => POPULAR_NAMES.indexOf(a.name) - POPULAR_NAMES.indexOf(b.name)) : [];
+  const title = (p.title as string) ?? 'Add Exercise'; const [warm, setWarm] = useState(/warm/i.test(title)); const [cardio, setCardio] = useState(/cardio/i.test(title)); const [z2, setZ2] = useState(false); const onDone = p.onDone as (ids: string[]) => void;
+  const list = useMemo(() => allExercises().filter((e) => (tab !== 'mine' || e.custom) && (!warm || e.warmup) && (!cardio || e.cardio) && (!z2 || e.zone2) && (!eq || e.equipment === eq) && (!mus ? !grp || [e.primary, ...e.others].some((m) => MUSCLE_GROUPS[grp].includes(m)) : [e.primary, ...e.others].includes(mus)) && norm(e.name).includes(norm(q))).sort((a, b) => a.name.localeCompare(b.name)), [allExercises, custom, tab, eq, grp, mus, q, warm, cardio, z2]);
+  const popular = !q && tab !== 'mine' && !warm && !cardio ? list.filter((e) => POPULAR_NAMES.includes(e.name)).sort((a, b) => POPULAR_NAMES.indexOf(a.name) - POPULAR_NAMES.indexOf(b.name)) : [];
   const toggle = (id: string) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   const Row = ({ e }: { e: Exercise }) => { const on = sel.includes(e.id); return (
     <li><div className={cx('flex items-center gap-3 rounded-2xl p-2', on && 'bg-brand-500/10')}>
-      <button role="checkbox" aria-checked={on} onClick={() => toggle(e.id)} className="flex min-h-[52px] min-w-0 flex-1 items-center gap-3 text-left"><ExerciseIcon equipment={e.equipment} /><span className="min-w-0 flex-1"><span className="block break-words font-semibold">{e.name}</span><span className="text-xs text-ink-2 dark:text-white/60">{e.primary} · {e.equipment}</span></span>
+      <button role="checkbox" aria-checked={on} onClick={() => toggle(e.id)} className="flex min-h-[52px] min-w-0 flex-1 items-center gap-3 text-left"><ExerciseIcon equipment={e.equipment} /><span className="min-w-0 flex-1"><span className="block break-words font-semibold">{e.name}</span><span className="text-xs text-ink-2 dark:text-white/60">{e.primary} · {e.equipment}{e.warmup && <b className="ml-1.5 rounded bg-orange-100 px-1 text-[10px] text-orange-800">WARM-UP</b>}{e.cardio && <b className="ml-1.5 rounded bg-blue-100 px-1 text-[10px] text-blue-800">{e.zone2 ? 'ZONE 2' : 'CARDIO'}</b>}</span></span>
         <span aria-hidden className={cx('grid h-6 w-6 place-items-center rounded-md border-2', on ? 'border-brand-600 bg-brand-600 text-white' : 'border-black/25 dark:border-white/30')}>{on && <Icon n="check" size={16} stroke={3} />}</span></button>
       {e.custom && <><IconBtn n="edit" label={`Edit ${e.name}`} onClick={() => open('customExercise', { id: e.id })} /><IconBtn n="trash" label={`Delete ${e.name}`} onClick={() => useTraining.getState().removeCustom(e.id)} /></>}
     </div></li>); };
@@ -28,6 +30,7 @@ export function Picker({ p, close }: OP) {
       footer={<Btn block disabled={!sel.length} onClick={() => { onDone(sel); close(); }}>Add Exercises ({sel.length})</Btn>}>
       <div className="sticky top-0 z-10 -mx-4 space-y-2 bg-canvas px-4 pb-2 pt-1 dark:bg-night">
         <div className="relative"><Icon n="search" className="absolute left-3 top-3 text-ink-3" /><input aria-label="Search exercises" placeholder="Search exercises" value={q} onChange={(e) => setQ(e.target.value)} className={cx(inputCls, 'pl-10')} /></div>
+        <div className="flex gap-2 overflow-x-auto pb-1"><Chip on={warm} tone="orange" onClick={() => setWarm(!warm)}>🔥 Warm-up</Chip><Chip on={cardio} tone="blue" onClick={() => { setCardio(!cardio); if (cardio) setZ2(false); }}>❤️ Cardio</Chip><Chip on={z2} tone="blue" onClick={() => { setZ2(!z2); if (!z2) setCardio(true); }}>Zone 2</Chip></div>
         <Segmented label="Browse by" value={tab} onChange={(v) => { setTab(v); }} options={[{ id: 'equipment', label: 'Equipment' }, { id: 'muscles', label: 'Muscles' }, { id: 'mine', label: 'My Workouts' }]} />
         {tab === 'equipment' && <div className="flex gap-2 overflow-x-auto pb-1"><Chip on={!eq} onClick={() => setEq(null)}>All</Chip>{EQUIPMENT.map((x) => <Chip key={x} on={eq === x} onClick={() => setEq(eq === x ? null : x)}>{x}</Chip>)}</div>}
         {tab === 'muscles' && (<><div className="flex gap-2 overflow-x-auto pb-1"><Chip on={!grp} onClick={() => { setGrp(null); setMus(null); }}>All</Chip>{Object.keys(MUSCLE_GROUPS).map((g) => <Chip key={g} on={grp === g} onClick={() => { setGrp(grp === g ? null : g); setMus(null); }}>{g}</Chip>)}</div>
@@ -49,8 +52,8 @@ async function shrink(file: File): Promise<string> {
 export function CustomExercise({ p, close }: OP) {
   const { custom, addCustom } = useTraining(); const ex = custom.find((e) => e.id === p.id); const file = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(ex?.name ?? ''); const [equipment, setEq] = useState<Equipment>(ex?.equipment ?? 'Barbell'); const [primary, setPrimary] = useState(ex?.primary ?? 'Pectoralis Major');
-  const [others, setOthers] = useState<string[]>(ex?.others ?? []); const [type, setType] = useState<ExerciseType>(ex?.type ?? 'weight_reps'); const [details, setDetails] = useState(ex?.details ?? ''); const [photos, setPhotos] = useState<string[]>(ex?.photos ?? []); const [err, setErr] = useState('');
-  const save = () => { if (!name.trim()) return setErr('Give the exercise a name.'); addCustom({ id: ex?.id, name: name.trim(), equipment, primary, others: others.filter((o) => o !== primary), type, details: details.trim() || undefined, photos }); useUI.getState().say('Exercise saved'); close(); };
+  const [others, setOthers] = useState<string[]>(ex?.others ?? []); const [type, setType] = useState<ExerciseType>(ex?.type ?? 'weight_reps'); const [details, setDetails] = useState(ex?.details ?? ''); const [photos, setPhotos] = useState<string[]>(ex?.photos ?? []); const [warmup, setWarmup] = useState(!!ex?.warmup); const [err, setErr] = useState('');
+  const save = () => { if (!name.trim()) return setErr('Give the exercise a name.'); addCustom({ id: ex?.id, name: name.trim(), equipment, primary, others: others.filter((o) => o !== primary), type, details: details.trim() || undefined, warmup, photos }); useUI.getState().say('Exercise saved'); close(); };
   return (
     <Sheet variant="full" onClose={close} title={ex ? 'Edit exercise' : 'Custom exercise'} footer={<Btn block onClick={save}>Save exercise</Btn>}>
       <div className="space-y-4 pt-1">
@@ -62,6 +65,7 @@ export function CustomExercise({ p, close }: OP) {
         <Field label="Primary muscle (one)"><select aria-label="Primary muscle" value={primary} onChange={(e) => setPrimary(e.target.value)} className={inputCls}>{Object.entries(MUSCLE_GROUPS).map(([g, ms]) => <optgroup key={g} label={g}>{ms.map((m) => <option key={m}>{m}</option>)}</optgroup>)}</select></Field>
         <div><Label className="mb-1">Other muscles (optional)</Label><div className="flex flex-wrap gap-2">{ALL_MUSCLES.filter((m) => m !== primary).map((m) => <Chip key={m} on={others.includes(m)} onClick={() => setOthers(others.includes(m) ? others.filter((x) => x !== m) : [...others, m])}>{m}</Chip>)}</div></div>
         <div role="radiogroup" aria-label="Exercise type"><Label className="mb-1">Exercise type</Label><ul className="space-y-1.5">{EXERCISE_TYPES.map((t) => <li key={t.id}><button role="radio" aria-checked={type === t.id} onClick={() => setType(t.id)} className={cx('flex min-h-[48px] w-full items-center justify-between rounded-xl px-4 text-left', type === t.id ? 'bg-brand-600 text-white' : 'bg-white dark:bg-night-card')}><span className="font-semibold">{t.label}</span><span className="text-xs opacity-75">{t.hint}</span></button></li>)}</ul></div>
+        <div className="flex items-center justify-between rounded-2xl bg-white p-3 shadow-card dark:bg-night-card"><span><b className="block">Warm-up exercise</b><span className="text-xs text-ink-2 dark:text-white/60">Shows under the “Warm-up only” filter</span></span><Chip on={warmup} tone="orange" onClick={() => setWarmup(!warmup)}>{warmup ? 'Yes' : 'No'}</Chip></div>
         <Field label="Details · how to · optional"><textarea value={details} onChange={(e) => setDetails(e.target.value)} rows={4} className={cx(inputCls, 'py-2')} /></Field>
       </div>
     </Sheet>
