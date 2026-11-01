@@ -1,4 +1,4 @@
-import { useEffect, useRef, useId, type ReactNode, type ButtonHTMLAttributes } from 'react';
+import { useEffect, useRef, useId, useState, type ReactNode, type ButtonHTMLAttributes } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Icon } from './Icons';
 
@@ -32,8 +32,20 @@ export function Input({ label, hint, className, ...p }: { label: string; hint?: 
   const id = useId();
   return (<div><label htmlFor={id} className="mb-1 block text-xs font-semibold uppercase tracking-wider text-ink-2 dark:text-white/60">{label}</label><input id={id} {...p} className={cx(inputCls, className)} />{hint && <p className="mt-1 text-xs text-ink-3 dark:text-white/50">{hint}</p>}</div>);
 }
-export function NumInput({ label, value, onChange, unit, hint, step = 1, min = 0 }: { label: string; value: number | ''; onChange: (n: number) => void; unit?: string; hint?: string; step?: number; min?: number }) {
-  return <Input label={label + (unit ? ` (${unit})` : '')} hint={hint} inputMode="decimal" type="number" min={min} step={step} value={value} onChange={(e) => onChange(e.target.value === '' ? 0 : Number(e.target.value))} />;
+/** Text-draft hook: typing "0." or "0.5" no longer collapses to 0, and leading zeros ("05") are stripped. */
+export function useNumDraft(value: number | '', onChange: (n: number) => void) {
+  const show = (v: number | '') => (v === '' || v === 0 ? '' : String(v));
+  const [txt, setTxt] = useState(show(value));
+  useEffect(() => { if (Number(txt || 0) !== Number(value || 0)) setTxt(show(value)); }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+  const set = (raw: string) => {
+    let v = raw.replace(',', '.'); if (v !== '' && !/^\d*\.?\d*$/.test(v)) return;
+    v = v.replace(/^0+(?=\d)/, ''); setTxt(v); onChange(v === '' || v === '.' ? 0 : Number(v));
+  };
+  return [txt, set] as const;
+}
+export function NumInput({ label, value, onChange, unit, hint }: { label: string; value: number | ''; onChange: (n: number) => void; unit?: string; hint?: string; step?: number; min?: number }) {
+  const [txt, set] = useNumDraft(value, onChange);
+  return <Input label={label + (unit ? ` (${unit})` : '')} hint={hint} inputMode="decimal" type="text" placeholder="0" value={txt} onChange={(e) => set(e.target.value)} />;
 }
 export function Stepper({ value, onChange, step = 1, min = 0, max = 1e9, label, format }: { value: number; onChange: (n: number) => void; step?: number; min?: number; max?: number; label: string; format?: (n: number) => string }) {
   return (
@@ -123,3 +135,4 @@ export { AnimatePresence };
 export function Toast({ msg }: { msg: string | null }) {
   return (<div aria-live="polite" role="status" className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4"><AnimatePresence>{msg && <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="max-w-sm break-words rounded-full bg-ink px-5 py-3 text-sm font-medium text-white shadow-lg">{msg}</motion.div>}</AnimatePresence></div>);
 }
+
