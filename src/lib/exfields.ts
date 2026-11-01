@@ -5,6 +5,7 @@ export type Field = 'kg' | 'reps' | 'time' | 'km';
 /** Which inputs a set row shows for an exercise type and (routine) target mode. */
 export function fieldsFor(type: ExerciseType, target: 'reps' | 'time' = 'reps'): Field[] {
   const base = typeMeta(type).fields as Field[];
+  if (type === 'distance_duration' || type === 'weight_distance') return base; // cardio: always time + km
   if (target === 'time') return base.includes('kg') ? ['kg', 'time'] : ['time'];
   const f = base.filter((x) => x !== 'time'); return f.length ? f : ['time'];
 }
