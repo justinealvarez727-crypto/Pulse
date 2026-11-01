@@ -26,7 +26,7 @@ export function RoutineEditor({ p, close }: OP) {
   const { routines, saveRoutine, deleteRoutine, ex, history } = useTraining(); const open = useUI((s) => s.open); const src = routines.find((r) => r.id === p.id);
   const [r, setR] = useState<Routine | null>(src ? structuredClone(src) : null); const [unit, setUnit] = useState<'kg' | 'lbs'>('kg'); const [menu, setMenu] = useState<string | null>(null); const [newCat, setNewCat] = useState(false); const [cat, setCat] = useState(''); const [confirm, setConfirm] = useState(false);
   if (!r) return null;
-  const cats = [...new Set([...routines.map((x) => x.category), r.category])];
+  const cats = [...new Set(['Push Day', 'Pull Day', 'Upper', 'Lower', 'Full Body', 'Cardio', 'Custom', ...routines.map((x) => x.category), r.category])];
   const upd = (sec: Section, u: string, f: (e: RoutineExercise) => RoutineExercise) => setR({ ...r, [sec]: r[sec].map((e) => (e.uid === u ? f(e) : e)) });
   const since = ymd(new Date(Date.now() - 90 * 864e5));
   const stat = (id: string) => { const s = history.filter((h) => h.date >= since).flatMap((h) => h.sessionsByExercise.filter((x) => x.exerciseId === id)); return { vol: s.reduce((a, x) => a + x.volume, 0), reps: s.reduce((a, x) => a + x.reps, 0), sec: s.reduce((a, x) => a + x.sec, 0), n: s.length }; };
@@ -41,7 +41,7 @@ export function RoutineEditor({ p, close }: OP) {
           <dl className="mt-3 grid grid-cols-4 gap-1 text-center text-[11px] text-white/60">{[['Volume', `${Math.round(st.vol)}kg`], ['Reps', st.reps], ['Time', `${Math.round(st.sec / 60)}m`], ['Sessions', st.n]].map(([l, v]) => <div key={l as string}><dt className="font-mono text-[9px] uppercase tracking-wider">{l}</dt><dd className="font-bold text-white">{v}</dd></div>)}</dl>
           <p className="mt-1 text-center font-mono text-[10px] uppercase tracking-widest text-white/40">last 3 months</p>
           <div className="mt-3 flex items-center justify-between text-xs text-white/70"><span className="font-mono tracking-wider">REST {e.rest ? e.rest : 'OFF'} SEC</span>
-            {(x?.type ?? '').startsWith('duration') ? null : <div className="flex items-center gap-2 font-mono"><span className="tracking-wider">TARGET</span><button role="switch" aria-checked={e.target === 'time'} aria-label="Target: toggle between weight and reps, or seconds" onClick={() => upd(sec, e.uid, (z) => ({ ...z, target: z.target === 'time' ? 'reps' : 'time' }))} className="rounded-full bg-white/10 px-3 py-1.5 font-bold text-white">{e.target === 'time' ? 'SEC' : `${unit.toUpperCase()}·REPS`}</button></div>}</div>
+            {/^(duration|distance)/.test(x?.type ?? '') ? null : <div className="flex items-center gap-2 font-mono"><span className="tracking-wider">TARGET</span><button role="switch" aria-checked={e.target === 'time'} aria-label="Target: toggle between weight and reps, or seconds" onClick={() => upd(sec, e.uid, (z) => ({ ...z, target: z.target === 'time' ? 'reps' : 'time' }))} className="rounded-full bg-white/10 px-3 py-1.5 font-bold text-white">{e.target === 'time' ? 'SEC' : `${unit.toUpperCase()}·REPS`}</button></div>}</div>
           <ul className="mt-2 space-y-1.5">{e.sets.map((s, si) => <li key={si} className="flex items-center gap-2"><span className="w-6 text-center font-mono text-xs text-white/50">{si + 1}</span>{fields.map((f: Field) => <div key={f} className="min-w-0 flex-1"><NumCell label={`Set ${si + 1} ${FIELD_LABEL[f]}`} step={f === 'kg' || f === 'km' ? 0.5 : 1} value={f === 'kg' ? dispKg(s.kg, unit) : f === 'time' ? s.sec : s[f === 'reps' ? 'reps' : 'km']} onChange={(n) => upd(sec, e.uid, (z) => ({ ...z, sets: z.sets.map((q, j) => (j === si ? { ...q, ...(f === 'kg' ? { kg: fromKg(n, unit) } : f === 'time' ? { sec: n } : f === 'reps' ? { reps: n } : { km: n }) } : q)) }))} /></div>)}
             <button aria-label={`Remove set ${si + 1}`} onClick={() => upd(sec, e.uid, (z) => ({ ...z, sets: z.sets.filter((_, j) => j !== si) }))} className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-red-400"><Icon n="minus" /></button></li>)}</ul>
           <button onClick={() => upd(sec, e.uid, (z) => ({ ...z, sets: [...z.sets, { ...(z.sets[z.sets.length - 1] ?? newSet()) }] }))} className="mt-2 min-h-[44px] w-full rounded-xl border-2 border-dashed border-white/25 font-mono text-xs font-bold tracking-widest text-white/70">+ ADD SET</button>
@@ -105,4 +105,3 @@ export function ActiveWorkoutScreen({ close }: OP) {
   );
 }
 void addDays; void ymd; void Toggle; void mkEx;
-
