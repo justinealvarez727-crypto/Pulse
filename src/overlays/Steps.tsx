@@ -32,6 +32,7 @@ export function StepsSheet({ close }: OP) {
         <Card><div className="flex items-start justify-between gap-2"><div><p className="text-2xl font-extrabold tabular">{today.toLocaleString()} <span className="text-sm font-semibold text-ink-2">of {profile.stepsGoal.toLocaleString()} goal</span></p></div><IconBtn n="share" label="Share steps" onClick={share} className="bg-black/5 dark:bg-white/10" /></div>
           <div className="my-2"><Bar pct={today / profile.stepsGoal} label="Steps goal" /></div>
           {editGoal ? <div className="flex items-end gap-2"><NumInput label="Daily goal" value={goal} onChange={setGoal} step={500} /><Btn onClick={() => { if (goal >= 100) { setProfile({ stepsGoal: goal }); setEditGoal(false); } }}>Done</Btn></div> : <button className="text-sm font-semibold text-brand-700 dark:text-brand-400" onClick={() => setEditGoal(true)}>Edit goal</button>}</Card>
+        <Btn v="outline" block onClick={() => open('stepsReport')}>Generate report</Btn>
         <Card><div className="mb-1 flex items-center justify-between"><IconBtn n="left" label="Previous month" onClick={() => nav(-1)} /><div className="text-center"><p className="font-bold">{MONTHS[m.mo]} {m.y}</p><Label>Days you moved · steps per day</Label></div><IconBtn n="right" label="Next month" onClick={() => nav(1)} /></div>
           <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-ink-3 dark:text-white/50">{['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <span key={i}>{d}</span>)}</div>
           <div className="mt-1 grid grid-cols-7 gap-1">{grid.map((d, i) => { if (!d) return <span key={i} />; const future = d > t; const s = stepsOn(d); return (
@@ -70,6 +71,33 @@ export function ActivityForm({ p, close }: OP) {
         <NumInput label="Active calories (optional)" unit="kcal" value={kcal || ''} onChange={setKcal} hint={est !== undefined ? `Leave empty to estimate (≈ ${est} kcal)` : 'Log your weight to enable estimates'} />
         <NumInput label="Steps (optional)" value={steps || ''} onChange={setSteps} hint="Added to that day's step total" /><NumInput label="Distance (optional)" unit="km" step={0.1} value={km || ''} onChange={setKm} />
         <Input label="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+      </div>
+    </Sheet>
+  );
+}
+
+/** Monthly steps report: totals, averages, goal hits, best day, streak, and a day-by-day table. */
+export function StepsReport({ close }: OP) {
+  const t = getToday(); const { profile: p, latestKg } = useProfile(); const stepsOn = useActivity((s) => s.stepsOn); const logs = useActivity((s) => s.logs); const days = useActivity((s) => s.days);
+  const [m, setM] = useState({ y: parseYmd(t).getFullYear(), mo: parseYmd(t).getMonth() }); void logs; void days;
+  const nav = (d: number) => { const x = new Date(m.y, m.mo + d, 1); setM({ y: x.getFullYear(), mo: x.getMonth() }); };
+  const cur = m.y === parseYmd(t).getFullYear() && m.mo === parseYmd(t).getMonth(); const kg = latestKg();
+  const dim = new Date(m.y, m.mo + 1, 0).getDate(); const all = Array.from({ length: dim }, (_, i) => `${m.y}-${String(m.mo + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`).filter((d) => d <= t);
+  const rows = all.map((d) => { const s = stepsOn(d); return { d, s, km: stepsToKm(s, p.heightCm), kcal: kcalBurned({ kg, steps: s, heightCm: p.heightCm }) }; });
+  const active = rows.filter((r) => r.s > 0); const total = rows.reduce((a, r) => a + r.s, 0); const avg = active.length ? total / active.length : 0;
+  const hit = rows.filter((r) => r.s >= p.stepsGoal).length; const best = active.reduce((a, r) => (r.s > (a?.s ?? 0) ? r : a), undefined as (typeof rows)[0] | undefined);
+  let run = 0, longest = 0; rows.forEach((r) => { if (r.s >= p.stepsGoal) longest = Math.max(longest, ++run); else run = 0; });
+  const prev = (() => { const x = new Date(m.y, m.mo - 1, 1); const n = new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate(); const v = Array.from({ length: n }, (_, i) => stepsOn(`${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`)).filter((q) => q > 0); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0; })();
+  const delta = prev ? ((avg - prev) / prev) * 100 : null; const burn = rows.reduce((a, r) => a + (r.kcal ?? 0), 0);
+  return (
+    <Sheet variant="full" onClose={close} caption="Steps" title="Steps report" subtitle={`${MONTHS[m.mo]} ${m.y}`} footer={<div className="flex gap-2 pb-1"><Btn v="ghost" className="flex-1" onClick={close}>Close</Btn><Btn className="flex-1" onClick={() => window.print()}>Print / save PDF</Btn></div>}>
+      <div className="space-y-3 pt-1">
+        <div className="flex items-center justify-between"><IconBtn n="left" label="Previous month" onClick={() => nav(-1)} /><b>{MONTHS[m.mo]} {m.y}</b><IconBtn n="right" label="Next month" onClick={() => nav(1)} className={cur ? 'pointer-events-none opacity-30' : ''} /></div>
+        <Card><Label>Summary</Label><p className="mt-1 text-sm">{active.length ? `You walked ${total.toLocaleString()} steps over ${active.length} active day${active.length > 1 ? 's' : ''}, averaging ${Math.round(avg).toLocaleString()} per day and reaching your ${p.stepsGoal.toLocaleString()}-step goal on ${hit} day${hit === 1 ? '' : 's'}.` : 'No steps logged this month yet.'}{delta !== null && active.length > 0 && ` That is ${Math.abs(Math.round(delta))}% ${delta >= 0 ? 'more' : 'fewer'} per day than last month.`}</p></Card>
+        <div className="grid grid-cols-2 gap-2">{[['Total steps', total.toLocaleString()], ['Daily average', Math.round(avg).toLocaleString()], ['Goal hit', `${hit}/${rows.length} days`], ['Best day', best ? `${best.s.toLocaleString()} · ${shortDate(best.d)}` : '–'], ['Distance', `${stepsToKm(total, p.heightCm).toFixed(1)} km`], ['Longest goal streak', `${longest} day${longest === 1 ? '' : 's'}`]].map(([l, v]) => <Card key={l} className="!p-3"><Label>{l}</Label><b className="break-words tabular">{v}</b></Card>)}</div>
+        {kg ? <Card className="!p-3"><Label>Estimated calories burned</Label><b className="tabular text-kcal-ink dark:text-kcal">{burn.toLocaleString()} kcal</b></Card> : <p className="rounded-2xl bg-orange-50 p-3 text-xs text-orange-900">Log your weight in Progress to include estimated calories burned.</p>}
+        <Card><Label className="mb-2">Day by day</Label><table className="w-full text-sm tabular"><thead><tr className="text-left text-[11px] text-ink-3"><th className="pb-1">Date</th><th>Steps</th><th>Km</th><th>Goal</th></tr></thead><tbody>{rows.map((r) => <tr key={r.d} className="border-t border-black/5 dark:border-white/10"><td className="py-1.5">{longDate(r.d)}</td><td className="font-semibold">{r.s ? r.s.toLocaleString() : '–'}</td><td>{r.s ? r.km.toFixed(1) : '–'}</td><td className={cx('font-bold', r.s >= p.stepsGoal ? 'text-green-600' : 'text-ink-3')}>{r.s >= p.stepsGoal ? '✓' : r.s ? `${Math.round((r.s / p.stepsGoal) * 100)}%` : '–'}</td></tr>)}</tbody></table></Card>
+        <p className="text-center text-[11px] text-ink-3">SELF-REPORTED ESTIMATES</p>
       </div>
     </Sheet>
   );
