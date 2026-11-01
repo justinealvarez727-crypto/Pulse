@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Sheet, Btn, Card, Chip, Field, Input, NumInput, Label, IconBtn, Empty, Bar, cx, inputCls } from '@/components/ui';
+import { Sheet, Btn, Card, Chip, Field, Input, NumInput, Label, IconBtn, Empty, Bar, Stepper, Segmented, Toggle, cx, inputCls } from '@/components/ui';
 import { Icon } from '@/components/Icons';
 import { useNutrition, effective, recipeTotals } from '@/store/nutrition';
 import { useUI, today as getToday } from '@/store/ui';
-import { estimate, lookup, scaleMacros, BUILTIN_INGREDIENTS } from '@/data/foods';
+import { estimate, lookup, scaleMacros, sumMacros, BUILTIN_INGREDIENTS } from '@/data/foods';
 import { addDays, hhmm, longDate, relDay, shortDate, uid } from '@/lib/date';
 import { MEAL_SLOTS, ZERO, type Macros, type Meal, type MealSlot } from '@/types';
 import type { OP } from '@/components/Overlays';
@@ -26,17 +26,24 @@ export function LogChooser({ p, close }: OP) {
   );
 }
 
-interface Item { id: string; name: string; grams: number }
+interface Item { id: string; name: string; grams: number; manual?: { kcal: number; p: number; f: number; c: number }; open?: boolean }
+type Line = { name: string; grams: number; matched: 'pantry' | 'table' | 'manual' | null; macros: Macros };
 export function LogMeal({ p, close }: OP) {
   const date = (p.date as string) ?? useUI.getState().date; const { addMeal, pantry, meals } = useNutrition();
   const [items, setItems] = useState<Item[]>([{ id: uid(), name: '', grams: 100 }]); const [panel, setPanel] = useState<null | 'pantry' | 'list' | 'history'>((p.panel as 'pantry') ?? null); const [q, setQ] = useState('');
   const [res, setRes] = useState<ReturnType<typeof run> | null>(null); const [slot, setSlot] = useState<MealSlot>(slotNow());
+  const pf = (n: string) => pantry.find((f) => f.name.toLowerCase() === n.trim().toLowerCase());
+  /** Where does this item's nutrition come from? pantry → built-in table → your manual numbers → nothing (not on list). */
+  const lineOf = (i: Item): Line => {
+    const name = i.name.trim(); const f = pf(name);
+    if (f) return { name, grams: i.grams, matched: 'pantry', macros: scaleMacros(f.macros, i.grams / f.grams) };
+    if (i.manual && i.manual.kcal > 0) return { name, grams: i.grams, matched: 'manual', macros: { ...ZERO, ...i.manual } };
+    const e = estimate([{ name, grams: i.grams }]).lines[0];
+    return { name, grams: i.grams, matched: e.matched ? 'table' : null, macros: e.macros };
+  };
   function run() {
-    const clean = items.filter((i) => i.name.trim() && i.grams > 0); const pan = (n: string) => pantry.find((f) => f.name.toLowerCase() === n.trim().toLowerCase());
-    const a = clean.filter((i) => !pan(i.name)); const est = estimate(a.map(({ name, grams }) => ({ name, grams })));
-    const pantryLines = clean.filter((i) => pan(i.name)).map((i) => { const f = pan(i.name)!; return { name: i.name, grams: i.grams, matched: 'pantry', macros: scaleMacros(f.macros, i.grams / f.grams) }; });
-    const lines = [...est.lines, ...pantryLines]; const total = lines.reduce((t, l) => ({ kcal: t.kcal + l.macros.kcal, p: t.p + l.macros.p, f: t.f + l.macros.f, c: t.c + l.macros.c, fiber: t.fiber + l.macros.fiber, sugar: t.sugar + l.macros.sugar, sodium: t.sodium + l.macros.sodium, chol: t.chol + l.macros.chol }), { ...ZERO });
-    return { total, lines, unmatched: est.unmatched, clean };
+    const clean = items.filter((i) => i.name.trim() && i.grams > 0); const lines = clean.map(lineOf);
+    return { total: sumMacros(lines.map((l) => l.macros)), lines, unmatched: lines.filter((l) => !l.matched).map((l) => l.name), clean };
   }
   const desc = (c: Item[]) => c.map((i) => `${i.grams}g ${i.name.trim()}`).join(', ');
   const log = () => { if (!res) return; addMeal({ date, time: date === getToday() ? hhmm() : '12:00', slot, name: res.clean[0].name.trim().replace(/^\w/, (c) => c.toUpperCase()) + (res.clean.length > 1 ? ` + ${res.clean.length - 1} more` : ''), desc: desc(res.clean), grams: res.clean.reduce((a, i) => a + i.grams, 0), ...Object.fromEntries(Object.entries(res.total).map(([k, v]) => [k, Math.round(v * 10) / 10])) as unknown as Macros }); useUI.getState().say('Meal logged'); useUI.getState().closeAll(); };
@@ -48,8 +55,8 @@ export function LogMeal({ p, close }: OP) {
         <div className="flex h-3 overflow-hidden rounded-full"><span style={{ flex: t.p * 4 + 0.01, background: '#16a34a' }} /><span style={{ flex: t.f * 9 + 0.01, background: '#eab308' }} /><span style={{ flex: t.c * 4 + 0.01, background: '#3b82f6' }} /></div>
         <div className="grid grid-cols-4 gap-2 text-center">{[['Protein', t.p], ['Carbs', t.c], ['Fat', t.f], ['Fiber', t.fiber]].map(([l, v]) => <Card key={l as string} className="!p-2"><Label>{l as string}</Label><p className="font-bold">{(v as number).toFixed(1)}g</p></Card>)}</div>
         <div><Label className="mb-1">Meal</Label><div className="flex flex-wrap gap-2">{MEAL_SLOTS.map((s) => <Chip key={s} on={slot === s} onClick={() => setSlot(s)}>{s}</Chip>)}</div></div>
-        <p className="break-words text-sm text-ink-2 dark:text-white/70">{desc(res.clean)}</p>
-        {res.unmatched.length > 0 && <p role="alert" className="rounded-xl bg-orange-50 p-3 text-sm text-orange-900">Not in the food table (counted as 0): {res.unmatched.join(', ')}. Use “Enter macros” for exact values.</p>}</div>
+        <div><Label className="mb-1">Each item</Label><ul className="space-y-2">{res.lines.map((l, i) => (<li key={i} className="rounded-2xl bg-white p-3 shadow-card dark:bg-night-card"><div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="break-words font-semibold">{l.grams} g {l.name}</p><SourceBadge src={l.matched} /></div><b className="shrink-0 tabular text-kcal-ink dark:text-kcal">{l.matched ? `${r0(l.macros.kcal)} kcal` : '—'}</b></div>{l.matched && <p className="mt-1 text-xs text-ink-2 dark:text-white/65">P {l.macros.p.toFixed(1)}g · C {l.macros.c.toFixed(1)}g · F {l.macros.f.toFixed(1)}g · Fiber {l.macros.fiber.toFixed(1)}g</p>}</li>))}</ul></div>
+        {res.unmatched.length > 0 && <p role="alert" className="rounded-xl bg-orange-50 p-3 text-sm text-orange-900">Not on the list (counted as 0): {res.unmatched.join(', ')}. Go back with “Edit meal” and tap “Enter macros” on that item, or use Enter macros from the + menu.</p>}</div>
     </Sheet>); }
 
   const set = (id: string, patch: Partial<Item>) => setItems((l) => l.map((i) => (i.id === id ? { ...i, ...patch } : i)));
@@ -61,26 +68,51 @@ export function LogMeal({ p, close }: OP) {
         {panel === 'pantry' && (<Card><Label className="mb-2">Tap to add — saved macros used on Estimate</Label><input aria-label="Search pantry" placeholder="Search pantry…" value={q} onChange={(e) => setQ(e.target.value)} className={inputCls} />
           {pantry.length === 0 ? <p className="py-4 text-center text-sm text-ink-2">Pantry is empty — save foods from “My pantry” first.</p> : <ul className="mt-2 space-y-1">{pantry.filter((f) => f.name.toLowerCase().includes(q.toLowerCase())).map((f) => <li key={f.id}><button className="flex w-full justify-between rounded-xl p-2 text-left hover:bg-black/5" onClick={() => setItems((l) => [...l.filter((i) => i.name.trim()), { id: uid(), name: f.name, grams: f.grams }])}><span className="break-words font-medium">{f.name}</span><span className="text-sm text-ink-2">{f.grams}g · {r0(f.macros.kcal)} kcal</span></button></li>)}</ul>}</Card>)}
         {(panel === 'list' || panel === 'history') && (<Card><Label className="mb-2">{panel === 'list' ? 'Past logs' : 'Tap to reuse'}</Label>{uniq.length === 0 ? <p className="py-3 text-center text-sm text-ink-2">No past logs yet.</p> : <ul className="space-y-1">{uniq.map((m) => <li key={m.id}><button disabled={panel === 'list'} className="flex w-full justify-between gap-2 rounded-xl p-2 text-left enabled:hover:bg-black/5" onClick={() => { setItems(m.desc.split(', ').map((x) => { const g = x.match(/^(\d+(?:\.\d+)?)g (.*)$/); return { id: uid(), grams: g ? Number(g[1]) : 100, name: g ? g[2] : x }; })); setPanel(null); }}><span className="break-words text-sm">{m.desc}</span><span className="shrink-0 text-xs text-ink-2">{shortDate(m.date)}</span></button></li>)}</ul>}</Card>)}
-        <ul className="space-y-2">{items.map((i, idx) => (<li key={i.id} className="flex items-end gap-2 rounded-2xl bg-white p-2 shadow-card dark:bg-night-card">
-          <div className="min-w-0 flex-1"><Input label="Food" placeholder="e.g. chicken breast cooked" value={i.name} onChange={(e) => set(i.id, { name: e.target.value })} data-autofocus={idx === 0 ? true : undefined} hint={i.name && !lookup(i.name) && !pantry.some((f) => f.name.toLowerCase() === i.name.toLowerCase()) ? 'Not in food table yet' : undefined} /></div>
+        <ul className="space-y-2">{items.map((i, idx) => { const ln = i.name.trim() && i.grams > 0 ? lineOf(i) : null; return (<li key={i.id} className="rounded-2xl bg-white p-2 shadow-card dark:bg-night-card"><div className="flex items-end gap-2">
+          <div className="min-w-0 flex-1"><Input label="Food" placeholder="e.g. chicken breast cooked" value={i.name} onChange={(e) => set(i.id, { name: e.target.value })} data-autofocus={idx === 0 ? true : undefined} /></div>
           <div className="w-24"><NumInput label="G" value={i.grams || ''} onChange={(n) => set(i.id, { grams: n })} /></div>
-          <IconBtn n="x" label={`Remove item ${idx + 1}`} onClick={() => setItems((l) => (l.length > 1 ? l.filter((x) => x.id !== i.id) : l))} /></li>))}</ul>
+          <IconBtn n="x" label={`Remove item ${idx + 1}`} onClick={() => setItems((l) => (l.length > 1 ? l.filter((x) => x.id !== i.id) : l))} /></div>
+          {ln && (<div className="mt-2 px-1"><div className="flex flex-wrap items-center gap-2"><SourceBadge src={ln.matched} />{!ln.matched && <button className="text-xs font-semibold text-brand-700 underline dark:text-brand-400" onClick={() => set(i.id, { open: !i.open, manual: i.manual ?? { kcal: 0, p: 0, f: 0, c: 0 } })}>{i.open ? 'Hide' : 'Enter macros'}</button>}</div>
+            {ln.matched && <p className="mt-1 text-xs text-ink-2 dark:text-white/65"><b className="text-kcal-ink dark:text-kcal">{r0(ln.macros.kcal)} kcal</b> · P {ln.macros.p.toFixed(1)}g · C {ln.macros.c.toFixed(1)}g · F {ln.macros.f.toFixed(1)}g</p>}
+            {!ln.matched && i.open && i.manual && <div className="mt-2 grid grid-cols-4 gap-2">{([['kcal', 'Kcal'], ['p', 'P (g)'], ['c', 'C (g)'], ['f', 'F (g)']] as const).map(([k, l]) => <NumInput key={k} label={l} value={i.manual![k] || ''} onChange={(n) => set(i.id, { manual: { ...i.manual!, [k]: n } })} />)}</div>}</div>)}</li>); })}</ul>
         <button onClick={() => setItems((l) => [...l, { id: uid(), name: '', grams: 100 }])} className="flex min-h-[48px] w-full items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-black/20 text-sm font-semibold text-ink-2 dark:border-white/25 dark:text-white/70"><Icon n="plus" size={18} /> Add item</button>
       </div>
     </Sheet>
   );
 }
 
+function SourceBadge({ src }: { src: 'pantry' | 'table' | 'manual' | null }) {
+  const m = { pantry: ['✓ In your pantry', 'bg-brand-500/15 text-brand-800 dark:text-brand-300'], table: ['✓ On the list (built-in table)', 'bg-brand-500/15 text-brand-800 dark:text-brand-300'], manual: ['✎ Your own macros', 'bg-water-soft text-water-ink'], none: ['⚠ Not on the list', 'bg-orange-100 text-orange-900'] }[src ?? 'none'];
+  return <span className={cx('inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold', m[1])}>{m[0]}</span>;
+}
 export function EnterMacros({ p, close }: OP) {
-  const date = (p.date as string) ?? useUI.getState().date; const add = useNutrition((s) => s.addMeal); const [slot, setSlot] = useState<MealSlot>(slotNow());
-  const [f, setF] = useState({ name: '', grams: 100, kcal: 0, p: 0, f: 0, c: 0, fiber: 0, sugar: 0, sodium: 0, chol: 0 }); const n = (k: keyof typeof f) => (v: number) => setF((x) => ({ ...x, [k]: v }));
-  const ok = f.name.trim() && f.kcal >= 0 && f.grams > 0;
+  const date = (p.date as string) ?? useUI.getState().date; const { addMeal, addPantry } = useNutrition(); const [slot, setSlot] = useState<MealSlot>(slotNow());
+  const [f, setF] = useState({ name: '', serving: 100, kcal: 0, p: 0, f: 0, c: 0, fiber: 0, sugar: 0, sodium: 0, chol: 0 });
+  const [qty, setQty] = useState(1); const [mode, setMode] = useState<'servings' | 'grams'>('servings'); const [grams, setGrams] = useState(100); const [keep, setKeep] = useState(false);
+  const n = (k: keyof typeof f) => (v: number) => setF((x) => ({ ...x, [k]: v }));
+  /** Everything below is entered PER STANDARD SERVING; k scales it to what was actually eaten. */
+  const k = mode === 'servings' ? qty : f.serving ? grams / f.serving : 0; const eatenG = mode === 'servings' ? qty * f.serving : grams;
+  const ok = f.name.trim() && f.serving > 0 && k > 0;
+  const save = () => {
+    const per = { kcal: f.kcal, p: f.p, f: f.f, c: f.c, fiber: f.fiber, sugar: f.sugar, sodium: f.sodium, chol: f.chol };
+    if (keep) addPantry({ name: f.name.trim(), grams: f.serving, macros: per });
+    addMeal({ name: f.name.trim(), desc: `${Math.round(eatenG * 10) / 10}g ${f.name.trim()}${mode === 'servings' ? ` (${qty} × ${f.serving}g serving)` : ''}`, grams: eatenG, date, slot, time: date === getToday() ? hhmm() : '12:00', ...(Object.fromEntries(Object.entries(per).map(([a, v]) => [a, Math.round(v * k * 10) / 10])) as unknown as Macros) });
+    useUI.getState().say('Meal logged'); useUI.getState().closeAll();
+  };
   return (
-    <Sheet onClose={close} title="Log a meal" subtitle="Enter the macros yourself" footer={<div className="flex gap-2 pb-1"><Btn v="ghost" className="flex-1" onClick={close}>Cancel</Btn><Btn className="flex-1" disabled={!ok} onClick={() => { add({ ...f, name: f.name.trim(), desc: `${f.grams}g ${f.name.trim()}`, date, slot, time: date === getToday() ? hhmm() : '12:00' }); useUI.getState().say('Meal logged'); useUI.getState().closeAll(); }}>Log it</Btn></div>}>
-      <div className="space-y-3 pt-1"><div className="flex flex-wrap gap-2">{MEAL_SLOTS.map((s) => <Chip key={s} on={slot === s} onClick={() => setSlot(s)}>{s}</Chip>)}</div>
+    <Sheet onClose={close} title="Log a meal" subtitle="Enter the macros yourself" footer={<div className="flex gap-2 pb-1"><Btn v="ghost" className="flex-1" onClick={close}>Cancel</Btn><Btn className="flex-1" disabled={!ok} onClick={save}>Log it</Btn></div>}>
+      <div className="space-y-4 pt-1"><div className="flex flex-wrap gap-2">{MEAL_SLOTS.map((s) => <Chip key={s} on={slot === s} onClick={() => setSlot(s)}>{s}</Chip>)}</div>
         <Input label="Food name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} data-autofocus />
-        <div className="grid grid-cols-2 gap-3"><NumInput label="Grams" value={f.grams || ''} onChange={n('grams')} /><NumInput label="Calories" value={f.kcal || ''} onChange={n('kcal')} /><NumInput label="Protein" unit="g" value={f.p || ''} onChange={n('p')} step={0.1} /><NumInput label="Fats" unit="g" value={f.f || ''} onChange={n('f')} step={0.1} /><NumInput label="Carbs" unit="g" value={f.c || ''} onChange={n('c')} step={0.1} /><NumInput label="Fiber" unit="g" value={f.fiber || ''} onChange={n('fiber')} step={0.1} /><NumInput label="Sugar (g) opt" value={f.sugar || ''} onChange={n('sugar')} step={0.1} /><NumInput label="Sodium (mg) opt" value={f.sodium || ''} onChange={n('sodium')} /><NumInput label="Cholesterol (mg) opt" value={f.chol || ''} onChange={n('chol')} /></div>
-        <p className="text-center text-xs text-ink-3 dark:text-white/50">Full control. No AI — you decide every number.</p></div>
+        <section className="rounded-2xl bg-white p-3 shadow-card dark:bg-night-card"><Label className="mb-2">1 · Standard serving (from the label)</Label>
+          <NumInput label="Serving size" unit="g" value={f.serving || ''} onChange={n('serving')} />
+          <p className="my-2 text-xs text-ink-2 dark:text-white/65">Enter the nutrition for ONE serving of {f.serving || 0} g:</p>
+          <div className="grid grid-cols-2 gap-3"><NumInput label="Calories" value={f.kcal || ''} onChange={n('kcal')} /><NumInput label="Protein" unit="g" value={f.p || ''} onChange={n('p')} /><NumInput label="Fats" unit="g" value={f.f || ''} onChange={n('f')} /><NumInput label="Carbs" unit="g" value={f.c || ''} onChange={n('c')} /><NumInput label="Fiber" unit="g" value={f.fiber || ''} onChange={n('fiber')} /><NumInput label="Sugar (g) opt" value={f.sugar || ''} onChange={n('sugar')} /><NumInput label="Sodium (mg) opt" value={f.sodium || ''} onChange={n('sodium')} /><NumInput label="Cholesterol (mg) opt" value={f.chol || ''} onChange={n('chol')} /></div></section>
+        <section className="rounded-2xl bg-white p-3 shadow-card dark:bg-night-card"><Label className="mb-2">2 · How much did you actually eat?</Label>
+          <Segmented label="Measure by" value={mode} onChange={setMode} options={[{ id: 'servings', label: 'Servings' }, { id: 'grams', label: 'Grams' }]} />
+          <div className="mt-3">{mode === 'servings' ? <div><Stepper label="servings eaten" value={qty} step={0.5} min={0.5} max={50} onChange={setQty} format={(v) => `${v} ×`} /><p className="mt-1 text-center text-xs text-ink-3">= {Math.round(eatenG * 10) / 10} g</p></div> : <NumInput label="Amount eaten" unit="g" value={grams || ''} onChange={setGrams} hint={`= ${Math.round(k * 100) / 100} servings`} />}</div>
+          <div className="mt-3 rounded-xl bg-kcal-soft p-3 text-kcal-ink dark:bg-kcal/20 dark:text-kcal"><p className="text-3xl font-extrabold tabular">{Math.round(f.kcal * k)} <span className="text-sm">kcal</span></p><p className="text-sm">P {(f.p * k).toFixed(1)}g · F {(f.f * k).toFixed(1)}g · C {(f.c * k).toFixed(1)}g · Fiber {(f.fiber * k).toFixed(1)}g</p></div></section>
+        <label className="flex items-center justify-between rounded-2xl bg-white p-3 shadow-card dark:bg-night-card"><span><b className="block">Save to pantry</b><span className="text-xs text-ink-2 dark:text-white/65">Reuse this serving in one tap next time</span></span><Toggle on={keep} onChange={setKeep} label="Save to pantry" /></label>
+        <p className="text-center text-xs text-ink-3 dark:text-white/50">Full control. No AI — you decide every number. Nothing is saved until you tap “Log it”.</p></div>
     </Sheet>
   );
 }
