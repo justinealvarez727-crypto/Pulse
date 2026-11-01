@@ -88,7 +88,7 @@ export default function Progress() {
             <polyline fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinejoin="round" points={wChart.map((w, i) => `${wx(i)},${wy(w.kg)}`).join(' ')} />{wChart.map((w, i) => (i === 0 || i === wChart.length - 1) && <circle key={w.date} cx={wx(i)} cy={wy(w.kg)} r="4.5" fill={i ? '#2563eb' : '#6b7a72'} />)}</svg>)}
         <div className="mt-3 grid grid-cols-4 gap-1 text-center">{[['Start', start], ['Current', cur], ['Goal', p.goalWeightKg], ['Remaining', remaining !== undefined ? Math.abs(Math.round(remaining * 10) / 10) : undefined]].map(([l, v]) => <div key={l as string} className="rounded-xl bg-black/5 p-2 dark:bg-white/10"><b className="block tabular">{v ?? '–'}</b><span className="text-[10px] text-ink-2 dark:text-white/60">{l}</span></div>)}</div>
         {cur !== undefined && <p className="mt-3 rounded-2xl bg-brand-500/10 p-3 text-sm">Eat <b>{n0(p.targets.kcal)} cal/day</b> to reach <b>{p.goalWeightKg} kg</b> by {shortDate(p.goalDate)}. Your first target is to {weeklyDelta <= 0 ? 'lose' : 'gain'} <b>{Math.abs(weeklyDelta).toFixed(1)} kg</b> this week — small steps one week at a time.</p>}
-        <div className="mt-3 grid grid-cols-2 gap-2"><Btn v="outline" onClick={() => open('macroJournal')}>Macro Journal</Btn><Btn onClick={() => open('weight', {})}>Update Weight</Btn></div></Card>
+        <div className="mt-3 grid grid-cols-2 gap-2"><Btn v="outline" onClick={() => open('macroJournal')}>Macro Journal</Btn><Btn onClick={() => open('weight', {})}>Update Weight</Btn></div><Btn v="outline" block className="mt-2" onClick={() => open('weightReport')}>Weekly weight report</Btn></Card>
 
       <Card as="section"><h2 className="mb-2 font-bold">Workout progress</h2><p className="text-sm text-ink-2 dark:text-white/65">{history.filter((h) => h.date >= mon).length} session(s) this week · {n0(history.filter((h) => h.date >= mon).reduce((a, h) => a + h.volume, 0))} kg volume</p><Btn v="outline" block className="mt-2" onClick={() => open('workout')}>Open workout progress</Btn></Card>
 
@@ -103,3 +103,4 @@ export default function Progress() {
   );
 }
 void ((_: Macros) => 0);
+
