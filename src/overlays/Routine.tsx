@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Sheet, Btn, Chip, Label, IconBtn, Input, Bar, cx, inputCls, Toggle } from '@/components/ui';
+import { Sheet, Btn, Chip, Label, IconBtn, Input, Bar, cx, inputCls, Toggle, useNumDraft } from '@/components/ui';
 import { Icon, ExerciseIcon } from '@/components/Icons';
 import { useTraining, mkEx, newSet, activeElapsedSec } from '@/store/training';
 import { useUI } from '@/store/ui';
@@ -16,8 +16,9 @@ const fromKg = (v: number, u: 'kg' | 'lbs') => (u === 'kg' ? v : Math.round(lbsT
 const tags = (e?: Exercise, sec: Section = 'main') => [sec === 'main' ? 'MAIN' : sec === 'warmup' ? 'WARM-UP' : 'COOL-DOWN', e?.primary, e?.equipment].filter(Boolean) as string[];
 function Tags({ e, sec }: { e?: Exercise; sec: Section }) { return <p className="mt-0.5 flex flex-wrap gap-1.5">{tags(e, sec).map((t, i) => <span key={t} className={cx('rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase', i === 0 ? (sec === 'warmup' ? 'bg-orange-500/20 text-orange-300' : sec === 'cooldown' ? 'bg-blue-500/20 text-blue-300' : 'bg-brand-500/20 text-brand-400') : 'bg-white/10 text-white/70')}>{t}</span>)}</p>; }
 
-function NumCell({ value, onChange, label, step = 1 }: { value: number; onChange: (n: number) => void; label: string; step?: number }) {
-  return <input aria-label={label} inputMode="decimal" type="number" min={0} step={step} value={value || ''} placeholder="0" onChange={(e) => onChange(Number(e.target.value) || 0)} className="h-11 w-full min-w-0 rounded-lg bg-white/10 text-center text-base font-bold tabular text-white placeholder:text-white/30 focus:outline focus:outline-2 focus:outline-brand-500" />;
+function NumCell({ value, onChange, label }: { value: number; onChange: (n: number) => void; label: string; step?: number }) {
+  const [txt, set] = useNumDraft(value, onChange);
+  return <input aria-label={label} inputMode="decimal" type="text" value={txt} placeholder="0" onChange={(e) => set(e.target.value)} className="h-11 w-full min-w-0 rounded-lg bg-white/10 text-center text-base font-bold tabular text-white placeholder:text-white/30 focus:outline focus:outline-2 focus:outline-brand-500" />;
 }
 
 /* ============ Routine editor ============ */
@@ -104,3 +105,4 @@ export function ActiveWorkoutScreen({ close }: OP) {
   );
 }
 void addDays; void ymd; void Toggle; void mkEx;
+
