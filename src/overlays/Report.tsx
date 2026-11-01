@@ -67,3 +67,36 @@ export function WeightUpdate({ p, close }: OP) {
   );
 }
 void monIdx;
+
+/** Weekly weight report: pick a week, see average / change / range, the trend of weekly averages, and a pace-to-goal estimate. */
+export function WeightReport({ close }: OP) {
+  const { weights, profile: p } = useProfile(); const open = useUI((s) => s.open); const t = getToday(); const [off, setOff] = useState(0);
+  const byWeek = useMemo(() => {
+    const m = new Map<string, number[]>(); weights.forEach((w) => { const k = mondayOf(w.date); m.set(k, [...(m.get(k) ?? []), w.kg]); });
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([w, v]) => ({ w, avg: v.reduce((a, b) => a + b, 0) / v.length, min: Math.min(...v), max: Math.max(...v), n: v.length }));
+  }, [weights]);
+  const mon = addDays(mondayOf(t), off * 7); const days = Array.from({ length: 7 }, (_, i) => addDays(mon, i));
+  const cur = byWeek.find((x) => x.w === mon); const prev = [...byWeek].filter((x) => x.w < mon).pop(); const delta = cur && prev ? cur.avg - prev.avg : null;
+  const last4 = byWeek.filter((x) => x.w <= mon).slice(-4); const rate = last4.length >= 2 ? (last4[last4.length - 1].avg - last4[0].avg) / (last4.length - 1) : null;
+  const toGoal = cur ? cur.avg - p.goalWeightKg : null; const towards = rate !== null && toGoal !== null && rate !== 0 && Math.sign(rate) === -Math.sign(toGoal);
+  const eta = towards ? Math.ceil(Math.abs(toGoal! / rate!)) : null;
+  const chart = byWeek.slice(-12); const lo = Math.min(...chart.map((x) => x.avg), p.goalWeightKg) - 0.5; const hi = Math.max(...chart.map((x) => x.avg), p.goalWeightKg) + 0.5;
+  const cx2 = (i: number) => (chart.length > 1 ? 12 + (i / (chart.length - 1)) * 276 : 150); const cy = (v: number) => 10 + (1 - (v - lo) / (hi - lo || 1)) * 90;
+  const f1 = (n: number) => (Math.round(n * 10) / 10).toFixed(1);
+  return (
+    <Sheet variant="full" onClose={close} title="Weekly weight report" footer={<div className="flex gap-2 pb-1"><Btn v="ghost" className="flex-1" onClick={close}>Close</Btn><Btn className="flex-1" onClick={() => open('weight', {})}>Update weight</Btn></div>}>
+      {byWeek.length === 0 ? <p className="py-10 text-center text-sm text-ink-2 dark:text-white/65">Log your weight first (Progress → Update Weight) and your weekly report will appear here.</p> : (
+        <div className="space-y-3 pt-1">
+          <div className="flex items-center justify-between"><IconBtn n="left" label="Previous week" onClick={() => setOff(off - 1)} /><b className="text-center font-mono text-xs tracking-widest">{shortDate(mon).toUpperCase()} – {shortDate(addDays(mon, 6)).toUpperCase()}{off === 0 && <span className="block text-[10px] text-ink-3">THIS WEEK</span>}</b><IconBtn n="right" label="Next week" onClick={() => setOff(Math.min(0, off + 1))} className={off === 0 ? 'pointer-events-none opacity-30' : ''} /></div>
+          <Card><Label>Summary</Label><p className="mt-1 text-sm">{cur ? `You logged ${cur.n} weigh-in${cur.n > 1 ? 's' : ''} and averaged ${f1(cur.avg)} kg${delta !== null ? `, ${Math.abs(delta) < 0.05 ? 'unchanged from' : `${delta < 0 ? 'down' : 'up'} ${f1(Math.abs(delta))} kg from`} the week before` : ''}.` : 'No weigh-ins this week.'}{toGoal !== null && ` You are ${f1(Math.abs(toGoal))} kg ${toGoal > 0 ? 'above' : toGoal < 0 ? 'below' : 'at'} your ${p.goalWeightKg} kg goal.`}{eta !== null && ` At your recent pace of ${f1(Math.abs(rate!))} kg/week, that is about ${eta} week${eta > 1 ? 's' : ''} away.`}{rate !== null && toGoal !== null && !towards && rate !== 0 && ' Your recent trend is moving away from the goal.'}</p></Card>
+          <div className="grid grid-cols-2 gap-2">{[['Average', cur ? `${f1(cur.avg)} kg` : '–'], ['Change vs last week', delta !== null ? `${delta > 0 ? '+' : ''}${f1(delta)} kg` : '–'], ['Lowest', cur ? `${f1(cur.min)} kg` : '–'], ['Highest', cur ? `${f1(cur.max)} kg` : '–']].map(([l, v]) => <Card key={l} className="!p-3"><Label>{l}</Label><b className="text-lg tabular">{v}</b></Card>)}</div>
+          <Card><Label className="mb-2">Daily weigh-ins</Label><ul className="divide-y divide-black/5 dark:divide-white/10">{days.map((d) => { const w = weights.find((x) => x.date === d)?.kg; return <li key={d}><button disabled={d > t} onClick={() => open('weight', { date: d })} className="flex min-h-[44px] w-full items-center justify-between text-left disabled:opacity-40"><span>{longDate(d)}</span><b className="tabular">{w !== undefined ? `${w} kg` : d > t ? '' : '+ add'}</b></button></li>; })}</ul></Card>
+          <Card><Label className="mb-2">Weekly average trend</Label>
+            <svg viewBox="0 0 300 110" className="w-full" role="img" aria-label={`Weekly average weight over ${chart.length} weeks`}><line x1="0" x2="300" y1={cy(p.goalWeightKg)} y2={cy(p.goalWeightKg)} stroke="#16a34a" strokeDasharray="4 3" /><text x="296" y={cy(p.goalWeightKg) - 3} textAnchor="end" fontSize="9" fill="#15803d">goal {p.goalWeightKg}</text>
+              <polyline fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinejoin="round" points={chart.map((x, i) => `${cx2(i)},${cy(x.avg)}`).join(' ')} />{chart.map((x, i) => <circle key={x.w} cx={cx2(i)} cy={cy(x.avg)} r={x.w === mon ? 5 : 3} fill={x.w === mon ? '#f97316' : '#2563eb'} />)}</svg></Card>
+          <Card className="overflow-x-auto"><Label className="mb-2">All weeks</Label><table className="w-full text-sm tabular"><thead><tr className="text-left text-[11px] text-ink-3"><th className="pb-1">Week of</th><th>Avg</th><th>Δ</th><th>Entries</th></tr></thead><tbody>{[...byWeek].reverse().map((x) => { const pv = byWeek[byWeek.indexOf(x) - 1]; const d = pv ? x.avg - pv.avg : null; return <tr key={x.w} className={`border-t border-black/5 dark:border-white/10 ${x.w === mon ? 'font-bold' : ''}`}><td className="py-1.5">{shortDate(x.w)}</td><td>{f1(x.avg)} kg</td><td className={d === null ? '' : (d < 0) === (p.goalWeightKg < x.avg) ? 'text-green-600' : 'text-orange-600'}>{d === null ? '–' : `${d > 0 ? '+' : ''}${f1(d)}`}</td><td>{x.n}</td></tr>; })}</tbody></table></Card>
+          <p className="text-center text-[11px] text-ink-3">SELF-REPORTED · weekly averages smooth out daily water-weight swings</p>
+        </div>)}
+    </Sheet>
+  );
+}
