@@ -33,7 +33,7 @@ export type Equipment = 'Bodyweight' | 'Barbell' | 'Dumbbell' | 'Kettlebell' | '
 export type ExerciseType = 'weight_reps' | 'bodyweight_reps' | 'weighted_bodyweight' | 'assisted_bodyweight' | 'duration' | 'duration_weight' | 'distance_duration' | 'weight_distance';
 export interface Exercise {
   id: string; name: string; equipment: Equipment; primary: string; others: string[]; type: ExerciseType;
-  details?: string; custom?: boolean; popular?: boolean; photos?: string[];
+  details?: string; custom?: boolean; popular?: boolean; warmup?: boolean; cardio?: boolean; zone2?: boolean; photos?: string[];
 }
 export interface SetTarget { kg: number; reps: number; sec: number; km: number }
 export interface RoutineExercise { uid: string; exerciseId: string; rest: number; target: 'reps' | 'time'; sets: SetTarget[]; note?: string }
