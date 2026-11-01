@@ -11,7 +11,7 @@ const REG: Record<string, ComponentType<OP>> = {
   water: L(() => import('@/overlays/Water'), 'WaterPopup'), waterHistory: L(() => import('@/overlays/Water'), 'WaterHistory'),
   fast: L(() => import('@/overlays/Fast'), 'FastScreen'), fastPlan: L(() => import('@/overlays/Fast'), 'FastPlanEdit'), fastWhen: L(() => import('@/overlays/Fast'), 'FastWhen'),
   fastFull: L(() => import('@/overlays/Fast'), 'FastFull'), fastHistory: L(() => import('@/overlays/Fast'), 'FastHistory'),
-  steps: L(() => import('@/overlays/Steps'), 'StepsSheet'), stepsAdd: L(() => import('@/overlays/Steps'), 'StepsAdd'), activityForm: L(() => import('@/overlays/Steps'), 'ActivityForm'),
+  steps: L(() => import('@/overlays/Steps'), 'StepsSheet'), stepsAdd: L(() => import('@/overlays/Steps'), 'StepsAdd'), activityForm: L(() => import('@/overlays/Steps'), 'ActivityForm'), stepsReport: L(() => import('@/overlays/Steps'), 'StepsReport'),
   logChooser: L(() => import('@/overlays/Meals'), 'LogChooser'), logMeal: L(() => import('@/overlays/Meals'), 'LogMeal'), enterMacros: L(() => import('@/overlays/Meals'), 'EnterMacros'),
   myPantry: L(() => import('@/overlays/Meals'), 'MyPantry'), recipes: L(() => import('@/overlays/Meals'), 'Recipes'), mealDetail: L(() => import('@/overlays/Meals'), 'MealDetail'),
   editMeal: L(() => import('@/overlays/Meals'), 'EditMeal'), datePick: L(() => import('@/overlays/Meals'), 'DatePick'), allLogs: L(() => import('@/overlays/Meals'), 'AllLogs'),
@@ -48,3 +48,4 @@ export function Overlays() {
     </AnimatePresence>
   );
 }
+
