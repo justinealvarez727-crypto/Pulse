@@ -6,7 +6,7 @@ import type { Equipment, Exercise, ExerciseType } from '@/types';
  * Exercise "pictures" are replaced by icons (spec) — see components/Icons.tsx#exerciseIcon.
  */
 const EQ: Record<string, Equipment> = { BW: 'Bodyweight', BB: 'Barbell', DB: 'Dumbbell', KB: 'Kettlebell', CB: 'Cable', MC: 'Machine', SM: 'Smith Machine', EZ: 'EZ Bar', PU: 'Pull-up Bar', RB: 'Resistance Band' };
-const TY: Record<string, ExerciseType> = { wr: 'weight_reps', br: 'bodyweight_reps', wb: 'weighted_bodyweight', ab: 'assisted_bodyweight', du: 'duration', dw: 'duration_weight', dd: 'distance_duration', wd: 'weight_distance' };
+const TY: Record<string, ExerciseType> = { tm: 'treadmill', wr: 'weight_reps', br: 'bodyweight_reps', wb: 'weighted_bodyweight', ab: 'assisted_bodyweight', du: 'duration', dw: 'duration_weight', dd: 'distance_duration', wd: 'weight_distance' };
 
 const RAW = `
 Barbell Bench Press|BB|Pectoralis Major|Triceps,Front Delts|wr
@@ -185,9 +185,9 @@ Kettlebell Press|KB|Front Delts|Triceps,Side Delts|wr
 Burpee|BW|Quadriceps|Pectoralis Major,Front Delts,Abs|br
 Box Jump|BW|Quadriceps|Glutes,Calves|br
 Jump Rope|BW|Calves|Soleus,Forearm Flexors|du
-Treadmill Run|MC|Quadriceps|Calves,Hamstrings,Glutes|dd
+Treadmill Run|MC|Quadriceps|Calves,Hamstrings,Glutes|tm
 Outdoor Run|BW|Quadriceps|Calves,Hamstrings,Glutes|dd
-Treadmill Walk|MC|Quadriceps|Calves,Glutes|dd
+Treadmill Walk|MC|Quadriceps|Calves,Glutes|tm
 Brisk Walk|BW|Quadriceps|Calves,Glutes|dd
 Cycling|BW|Quadriceps|Calves,Hamstrings,Glutes|dd
 Stationary Bike|MC|Quadriceps|Calves,Hamstrings|dd
@@ -241,7 +241,7 @@ Banded Squat|RB|Quadriceps|Glutes|br
 Banded Face Pull|RB|Rear Delts|Rhomboids|br
 Light Rowing|MC|Latissimus Dorsi|Quadriceps,Biceps|dd
 Zone 2 Run|BW|Quadriceps|Calves,Hamstrings,Glutes|dd
-Zone 2 Treadmill Incline Walk|MC|Glutes|Quadriceps,Calves|dd
+Zone 2 Treadmill Incline Walk|MC|Glutes|Quadriceps,Calves|tm
 Zone 2 Brisk Walk|BW|Quadriceps|Calves,Glutes|dd
 Zone 2 Hike|BW|Quadriceps|Glutes,Calves,Hamstrings|dd
 Zone 2 Cycling|BW|Quadriceps|Calves,Hamstrings,Glutes|dd

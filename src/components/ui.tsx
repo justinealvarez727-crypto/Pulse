@@ -135,4 +135,3 @@ export { AnimatePresence };
 export function Toast({ msg }: { msg: string | null }) {
   return (<div aria-live="polite" role="status" className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4"><AnimatePresence>{msg && <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="max-w-sm break-words rounded-full bg-ink px-5 py-3 text-sm font-medium text-white shadow-lg">{msg}</motion.div>}</AnimatePresence></div>);
 }
-

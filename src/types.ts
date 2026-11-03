@@ -30,12 +30,12 @@ export interface WeightEntry { date: YMD; kg: number }
 
 /* ---------------- Exercises & training ---------------- */
 export type Equipment = 'Bodyweight' | 'Barbell' | 'Dumbbell' | 'Kettlebell' | 'Cable' | 'Machine' | 'Smith Machine' | 'EZ Bar' | 'Pull-up Bar' | 'Resistance Band';
-export type ExerciseType = 'weight_reps' | 'bodyweight_reps' | 'weighted_bodyweight' | 'assisted_bodyweight' | 'duration' | 'duration_weight' | 'distance_duration' | 'weight_distance';
+export type ExerciseType = 'weight_reps' | 'bodyweight_reps' | 'weighted_bodyweight' | 'assisted_bodyweight' | 'duration' | 'duration_weight' | 'distance_duration' | 'weight_distance' | 'treadmill';
 export interface Exercise {
   id: string; name: string; equipment: Equipment; primary: string; others: string[]; type: ExerciseType;
   details?: string; custom?: boolean; popular?: boolean; warmup?: boolean; cardio?: boolean; zone2?: boolean; photos?: string[];
 }
-export interface SetTarget { kg: number; reps: number; sec: number; km: number }
+export interface SetTarget { kg: number; reps: number; sec: number; km: number; incline?: number; speed?: number }
 export interface RoutineExercise { uid: string; exerciseId: string; rest: number; target: 'reps' | 'time'; sets: SetTarget[]; note?: string }
 export type Section = 'warmup' | 'main' | 'cooldown';
 export interface Routine {

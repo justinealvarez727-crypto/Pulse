@@ -103,4 +103,3 @@ export default function Progress() {
   );
 }
 void ((_: Macros) => 0);
-

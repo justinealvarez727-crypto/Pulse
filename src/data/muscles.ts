@@ -23,7 +23,7 @@ export function freqGroup(muscle: string): (typeof FREQ_GROUPS)[number] {
   }
   return 'Core';
 }
-export const EXERCISE_TYPES: { id: ExerciseType; label: string; fields: ('reps' | 'kg' | 'time' | 'km')[]; hint: string }[] = [
+export const EXERCISE_TYPES: { id: ExerciseType; label: string; fields: ('reps' | 'kg' | 'time' | 'km' | 'incline' | 'speed')[]; hint: string }[] = [
   { id: 'weight_reps', label: 'Weight & Reps', fields: ['kg', 'reps'], hint: 'Reps + Kg' },
   { id: 'bodyweight_reps', label: 'Bodyweight Reps', fields: ['reps'], hint: 'Reps' },
   { id: 'weighted_bodyweight', label: 'Weighted Bodyweight', fields: ['kg', 'reps'], hint: 'Reps + Kg added' },
@@ -32,5 +32,6 @@ export const EXERCISE_TYPES: { id: ExerciseType; label: string; fields: ('reps' 
   { id: 'duration_weight', label: 'Duration & Weight', fields: ['kg', 'time'], hint: 'Kg + Time' },
   { id: 'distance_duration', label: 'Distance & Duration', fields: ['time', 'km'], hint: 'Time + Km' },
   { id: 'weight_distance', label: 'Weight & Distance', fields: ['kg', 'km'], hint: 'Kg + Km' },
+  { id: 'treadmill', label: 'Treadmill', fields: ['incline', 'speed', 'time'], hint: 'Incline % + Speed + Time' },
 ];
 export const typeMeta = (t: ExerciseType) => EXERCISE_TYPES.find((x) => x.id === t)!;

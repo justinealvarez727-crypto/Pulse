@@ -8,7 +8,9 @@ import { BUILTIN_EXERCISES, exerciseIndex } from '@/data/exercises';
 export const ROUTINE_COLORS = ['#16a34a', '#2563eb', '#f97316', '#a855f7', '#e11d48', '#0891b2', '#ca8a04', '#db2777', '#4f46e5', '#65a30d'];
 export const DEFAULT_REST = 150;
 export const newSet = (): SetTarget => ({ kg: 0, reps: 5, sec: 60, km: 0 });
-export const mkEx = (exerciseId: string, sets = 3): RoutineExercise => ({ uid: uid(), exerciseId, rest: DEFAULT_REST, target: /^(duration|distance)/.test(exerciseIndex.get(exerciseId)?.type ?? '') ? 'time' : 'reps', sets: Array.from({ length: sets }, newSet) });
+const isCardioType = (id: string) => ['treadmill', 'distance_duration'].includes(exerciseIndex.get(id)?.type ?? '');
+/** Strength: 3 sets, 150 s rest. Treadmill / distance cardio: one continuous block, no rest timer. */
+export const mkEx = (exerciseId: string, sets = isCardioType(exerciseId) ? 1 : 3): RoutineExercise => ({ uid: uid(), exerciseId, rest: isCardioType(exerciseId) ? 0 : DEFAULT_REST, target: /^(duration|distance|treadmill)/.test(exerciseIndex.get(exerciseId)?.type ?? '') ? 'time' : 'reps', sets: Array.from({ length: sets }, () => (exerciseIndex.get(exerciseId)?.type === 'treadmill' ? { kg: 0, reps: 0, sec: 1800, km: 0, incline: 1, speed: 6 } : newSet())) });
 
 /** Default Push / Pull / Legs — 3×5 @ 150s rest, every exercise tagged MAIN (spec). */
 export function defaultRoutines(): Routine[] {
@@ -20,7 +22,7 @@ export function defaultRoutines(): Routine[] {
   ];
 }
 /** One continuous cardio block: a single time-based set of `min` minutes. */
-const block = (id: string, min: number): RoutineExercise => ({ ...mkEx(id, 1), target: 'time', rest: 0, sets: [{ kg: 0, reps: 0, sec: min * 60, km: 0 }] });
+const block = (id: string, min: number): RoutineExercise => ({ ...mkEx(id, 1), target: 'time', rest: 0, sets: [{ kg: 0, reps: 0, sec: min * 60, km: 0, ...(id === 'zone-2-treadmill-incline-walk' ? { incline: 6, speed: 5 } : {}) }] });
 export const READY_MADE: Omit<Routine, 'id'>[] = [
   { name: 'Zone 2 Run', desc: 'Easy conversational-pace run, 45 min.', category: 'Cardio', color: ROUTINE_COLORS[6], warmup: [mkEx('light-jog-in-place', 1), mkEx('leg-swings', 1)].map((e) => ({ ...e, target: 'time' as const, rest: 0, sets: [{ kg: 0, reps: 0, sec: 120, km: 0 }] })), main: [block('zone-2-run', 45)], cooldown: [] },
   { name: 'Zone 2 Bike', desc: 'Steady easy ride, 60 min.', category: 'Cardio', color: ROUTINE_COLORS[7], warmup: [], main: [block('zone-2-cycling', 60)], cooldown: [] },
@@ -111,7 +113,7 @@ export const useTraining = create<S>()(persist((set, get) => ({
       const done = e.sets.filter((s) => s.done); if (!done.length) continue;
       const kgUnit = a.unit === 'lbs' ? 1 / 2.2046226 : 1; // stored in kg
       const info = ex(e.exerciseId);
-      const rows = done.map((s) => ({ kg: s.kg * kgUnit, reps: s.reps, sec: s.sec, km: s.km }));
+      const rows = done.map((s) => ({ kg: s.kg * kgUnit, reps: s.reps, sec: s.sec, km: s.km || ((s.speed ?? 0) * s.sec) / 3600 }));
       const vol = rows.reduce((t, s) => t + s.kg * s.reps, 0);
       const bestKg = Math.max(0, ...rows.map((s) => s.kg));
       if (bestKg > 0 && bestKg > (prevBest[e.exerciseId] ?? 0)) records++;
